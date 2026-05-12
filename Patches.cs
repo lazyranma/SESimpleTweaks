@@ -118,51 +118,54 @@ namespace SimpleTweaks
         {
             try
             {
-                if (!(_mb is LabelLinksHandler llh))
-                    return;
-
-                TMP_Text label = llh.GetComponent<TMP_Text>();
-                if (label == null || label.textInfo == null)
-                    return;
-
-                SearchRow searchRow = llh.GetComponentInParent<SearchRow>();
-                if (searchRow == null || searchRow.ObjectInfo == null)
-                    return;
-
-                int linkIdx = TMP_TextUtilities.FindIntersectingLink(label, Input.mousePosition, null);
-                if (linkIdx < 0 || linkIdx >= label.textInfo.linkCount)
-                    return;
-
-                string linkID = label.textInfo.linkInfo[linkIdx].GetLinkID();
-                string[] parts = linkID.Split(':');
-                if (parts.Length != 2 || parts[0] != "ResourceDefinition")
-                    return;
-
-                string rdID = parts[1];
-                ResourceDefinition rd = SerializedMonoBehaviourSingleton<AllScriptableObjectManager>.Instance
-                    .AllResourceDefinitions.ListNotEmpty
-                    .FirstOrDefault(d => d.ID == rdID);
-                if (rd == null)
-                    return;
-
-                ObjectInfoData oid = searchRow.ObjectInfo.GetObjectInfoData(
-                    MonoBehaviourSingleton<GameManager>.Instance.Player);
-                if (oid == null)
-                    return;
-
-                RowExploredResourcesData explored = oid.listExploredResourcesRows
-                    .Where(r => r.ResourceType == rd && r.ExploredInAnyCapacity)
-                    .OrderByDescending(r => r.ObservedData?.MiningFactor ?? 0f)
-                    .FirstOrDefault();
-                if (explored == null)
-                    return;
-
-                tooltipString = BuildDepositTooltip(explored, rd, searchRow.ObjectInfo);
+                if (_mb is LabelLinksHandler llh)
+                    TryHandleDepositTooltip(llh, ref tooltipString);
             }
             catch (Exception ex)
             {
                 Plugin.Log.LogError("[SimpleTweaks] Patch_ToolTipManager_ShowToolTip: " + ex);
             }
+        }
+
+        private static void TryHandleDepositTooltip(LabelLinksHandler llh, ref string tooltipString)
+        {
+            TMP_Text label = llh.GetComponent<TMP_Text>();
+            if (label == null || label.textInfo == null)
+                return;
+
+            SearchRow searchRow = llh.GetComponentInParent<SearchRow>();
+            if (searchRow == null || searchRow.ObjectInfo == null)
+                return;
+
+            int linkIdx = TMP_TextUtilities.FindIntersectingLink(label, Input.mousePosition, null);
+            if (linkIdx < 0 || linkIdx >= label.textInfo.linkCount)
+                return;
+
+            string linkID = label.textInfo.linkInfo[linkIdx].GetLinkID();
+            string[] parts = linkID.Split(':');
+            if (parts.Length != 2 || parts[0] != "ResourceDefinition")
+                return;
+
+            string rdID = parts[1];
+            ResourceDefinition rd = SerializedMonoBehaviourSingleton<AllScriptableObjectManager>.Instance
+                .AllResourceDefinitions.ListNotEmpty
+                .FirstOrDefault(d => d.ID == rdID);
+            if (rd == null)
+                return;
+
+            ObjectInfoData oid = searchRow.ObjectInfo.GetObjectInfoData(
+                MonoBehaviourSingleton<GameManager>.Instance.Player);
+            if (oid == null)
+                return;
+
+            RowExploredResourcesData explored = oid.listExploredResourcesRows
+                .Where(r => r.ResourceType == rd && r.ExploredInAnyCapacity)
+                .OrderByDescending(r => r.ObservedData?.Value ?? 0.0)
+                .FirstOrDefault();
+            if (explored == null)
+                return;
+
+            tooltipString = BuildDepositTooltip(explored, rd, searchRow.ObjectInfo);
         }
 
         private static string BuildDepositTooltip(
@@ -256,16 +259,44 @@ namespace SimpleTweaks
                 int atlasCount  = oi.AsteroidCanBePushHowMuch(player, atlas);
                 int engineCount = oi.AsteroidCanBePushHowMuch(player, engine);
 
-                string existing = moonsTmp.text;
-                moonsTmp.text = atlasCount + "A/" + engineCount + "E  " + existing;
+                // Create a dedicated TMP element for tow requirements, placed to the LEFT
+                // of moonsTextMeshPro as a sibling. moonsTextMeshPro is left completely
+                // untouched so the game's original asteroid-type tooltip keeps working.
+                var moonsRT = moonsTmp.rectTransform;
+                var towGo = new GameObject("TowRequirements");
+                towGo.transform.SetParent(moonsTmp.transform.parent, false);
+                towGo.transform.SetAsLastSibling(); // render on top of resource icons
 
-                ShowToolTip tt = moonsTmp.gameObject.GetComponent<ShowToolTip>();
-                if (tt == null)
-                    tt = moonsTmp.gameObject.AddComponent<ShowToolTip>();
+                var towTmp = towGo.AddComponent<TextMeshProUGUI>();
+                towTmp.font = moonsTmp.font;
+                towTmp.fontSharedMaterial = moonsTmp.fontSharedMaterial;
+                towTmp.fontSize = moonsTmp.fontSize;
+                towTmp.color = moonsTmp.color;
+                towTmp.enableWordWrapping = false;
+                towTmp.alignment = TextAlignmentOptions.MidlineRight;
+                towTmp.text = atlasCount + "A/" + engineCount + "E";
 
+                // Measure actual text width so the hitbox is tight around the text only.
+                towTmp.ForceMeshUpdate();
+                float towWidth = Mathf.Ceil(towTmp.preferredWidth) + 4f;
+
+                // Right-align tow label immediately left of the type-letter column (moonsRT),
+                // with only a small gap. The hitbox is exactly as wide as the text.
+                var towRT = towGo.GetComponent<RectTransform>();
+                towRT.anchorMin = moonsRT.anchorMin;
+                towRT.anchorMax = moonsRT.anchorMax;
+                towRT.pivot     = new Vector2(1f, moonsRT.pivot.y);
+                towRT.sizeDelta = new Vector2(towWidth, moonsRT.sizeDelta.y);
+                // Place tow text centred in the free space inside the OBJECTS column:
+                // right edge at the midpoint of moonsRT (halfway between left and right edges).
+                float moonsRightEdge = moonsRT.anchoredPosition.x + moonsRT.sizeDelta.x * (1f - moonsRT.pivot.x);
+                towRT.anchoredPosition = new Vector2(moonsRightEdge - moonsRT.sizeDelta.x * 0.5f, moonsRT.anchoredPosition.y);
+
+                var oiRef     = oi;
                 var atlasRef  = atlas;
                 var engineRef = engine;
-                var oiRef     = oi;
+
+                var tt = towGo.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCodeRefreshText2 = () =>
                 {
                     Company p = MonoBehaviourSingleton<GameManager>.Instance.Player;
