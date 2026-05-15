@@ -223,10 +223,6 @@ namespace SimpleTweaks
             return tooltip;
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 2: Show Atlas / Asteroid-Engine tow requirements in search rows.
-    // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(SearchRow), "Start")]
     public static class Patch_SearchRow_Start
     {
@@ -234,39 +230,158 @@ namespace SimpleTweaks
             typeof(SearchRow).GetField("moonsTextMeshPro",
                 BindingFlags.NonPublic | BindingFlags.Instance);
 
+        private const float DeleteBtnWidth = 20f;
+        private const float DeleteBtnGap = 4f;
+        private const float TotalDeleteColumnWidth = DeleteBtnWidth + DeleteBtnGap;
+        private static Sprite _trashSprite;
+        private static bool _trashSpriteLookedUp;
+
+        private static Sprite GetTrashSprite()
+        {
+            if (_trashSpriteLookedUp) return _trashSprite;
+            _trashSpriteLookedUp = true;
+            var oiw = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                .GetWindow<ObjectInfoWindow>();
+            var uiObjName = oiw?.GetComponentInChildren<UIObjectName>(true);
+            if (uiObjName != null)
+            {
+                var btn = Traverse.Create(uiObjName).Field("trashObjectInfo")
+                    .GetValue<UnityEngine.UI.Button>();
+                if (btn != null)
+                {
+                    foreach (var img in btn.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+                    {
+                        if (img.sprite != null)
+                        {
+                            var n = img.sprite.name.ToLower();
+                            if (img.sprite.name == "trash_delete_deconstruction")
+                            {
+                                _trashSprite = img.sprite;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return _trashSprite;
+        }
+
         static void Postfix(SearchRow __instance)
         {
             try
             {
                 ObjectInfo oi = __instance.ObjectInfo;
-                if (oi == null)
-                    return;
-                if (oi.objectTypes != EObjectTypes.Asteroid && oi.objectTypes != EObjectTypes.Comet)
-                    return;
-                if (!oi.PushableAsteroid2)
-                    return;
+                if (oi == null) return;
+                if (oi.objectTypes != EObjectTypes.Asteroid && oi.objectTypes != EObjectTypes.Comet) return;
 
                 TextMeshProUGUI moonsTmp = MoonsField?.GetValue(__instance) as TextMeshProUGUI;
-                if (moonsTmp == null)
-                    return;
-
-                var allSc = SerializedMonoBehaviourSingleton<AllScriptableObjectManager>.Instance.AllSpacecraftType;
-                SpacecraftType atlas  = allSc.GetByID("spacecraft_asteroid_puller");
-                SpacecraftType engine = allSc.GetByID("Spacecraft_build_asteroid_engine_facilityModule");
-                if (atlas == null || engine == null)
-                    return;
+                if (moonsTmp == null) return;
 
                 Company player = MonoBehaviourSingleton<GameManager>.Instance.Player;
-                int atlasCount  = oi.AsteroidCanBePushHowMuch(player, atlas);
+                var moonsRT = moonsTmp.rectTransform;
+                bool canDelete = oi.CanPlayerForgotObject();
+
+                // ── Create delete button / spacer ──
+                var delGo = new GameObject(canDelete ? "AsteroidTrashBtn" : "AsteroidTrashSpacer");
+                delGo.transform.SetParent(moonsTmp.transform.parent, false);
+                delGo.transform.SetAsLastSibling();
+
+                var delRT = delGo.AddComponent<RectTransform>();
+                delRT.anchorMin = new Vector2(1f, 0.5f);
+                delRT.anchorMax = new Vector2(1f, 0.5f);
+                delRT.pivot = new Vector2(1f, 0.5f);
+                delRT.sizeDelta = new Vector2(DeleteBtnWidth, DeleteBtnWidth);
+                delRT.anchoredPosition = new Vector2(-2f, 0f);
+
+                if (canDelete)
+                {
+                    var img = delGo.AddComponent<UnityEngine.UI.Image>();
+                    var trashSprite = GetTrashSprite();
+                    if (trashSprite != null) { img.sprite = trashSprite; img.type = UnityEngine.UI.Image.Type.Simple; img.color = Color.white; img.preserveAspect = true; }
+                    else { img.color = new Color(0.15f, 0.15f, 0.15f, 0.7f); }
+
+                    var btn = delGo.AddComponent<UnityEngine.UI.Button>();
+                    btn.targetGraphic = img;
+                    var oiDel = oi;
+                    btn.onClick.AddListener(() =>
+                    {
+                        try
+                        {
+                            if (!oiDel.CanPlayerForgotObject()) return;
+                            SerializedMonoBehaviourSingleton<UIManager>.Instance.ShowPopUP(
+                                LEManager.Get("PopUPOnClickTrashObjectInfo"),
+                                delegate
+                                {
+                                    ObjectInfo parentOI = oiDel.parentObjectInfo;
+                                    ObjectInfoGroups parentGroup = oiDel.parentObjectInfoGropup;
+                                    oiDel.VirtualDestroy();
+                                    var w = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                                        .GetWindow<ObjectInfoWindow>();
+                                    if (w.Open && w.ObjectInfoCurrent == oiDel)
+                                        w.HideImmediately();
+                                    w = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                                        .GetSecondWindow<ObjectInfoWindow>();
+                                    if (w.Open && w.ObjectInfoCurrent == oiDel)
+                                        w.HideImmediately();
+                                    var sow = SerializedMonoBehaviourSingleton<UIManager>.Instance.GetWindow<SearchObjectWindow>();
+                                    if (sow != null) sow.StartCoroutine(ReExpandParent(parentOI, parentGroup));
+                                },
+                                delegate { },
+                                btnOkEnable: true, btnNoEnable: true,
+                                blockerOn: true, yesNoMenu: true);
+                        }
+                        catch (Exception ex)
+                        {
+                            Plugin.Log.LogError("[SimpleTweaks] AsteroidTrashBtn: " + ex);
+                        }
+                    });
+
+                    // Fallback trash icon (only if no sprite found)
+                    if (trashSprite == null)
+                    {
+                    var lblGo = new GameObject("Lbl");
+                    lblGo.transform.SetParent(delGo.transform, false);
+                    var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+                    lbl.font = moonsTmp.font;
+                    lbl.fontSharedMaterial = moonsTmp.fontSharedMaterial;
+                    lbl.fontSize = 12f;
+                    lbl.color = new Color(0.9f, 0.3f, 0.3f, 1f);
+                    lbl.alignment = TextAlignmentOptions.Center;
+                    lbl.enableWordWrapping = false;
+                    lbl.text = "\u2716";
+                    var lblRT = lblGo.GetComponent<RectTransform>();
+                    lblRT.anchorMin = Vector2.zero;
+                    lblRT.anchorMax = Vector2.one;
+                    lblRT.offsetMin = Vector2.zero;
+                    lblRT.offsetMax = Vector2.zero;
+
+                    }
+                    // Tooltip
+                    var tt = delGo.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
+                    tt.CustomTextFromCodeRefreshText2 =
+                        () => LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
+                }
+
+                // ── Shift moonsRT left ──
+                moonsRT.anchoredPosition = new Vector2(
+                    moonsRT.anchoredPosition.x - TotalDeleteColumnWidth,
+                    moonsRT.anchoredPosition.y);
+
+                // ── Tow info ──
+                if (!oi.PushableAsteroid2) return;
+
+                var allSc = SerializedMonoBehaviourSingleton<AllScriptableObjectManager>.Instance.AllSpacecraftType;
+                SpacecraftType atlas = allSc.GetByID("spacecraft_asteroid_puller");
+                SpacecraftType engine = allSc.GetByID("Spacecraft_build_asteroid_engine_facilityModule");
+                if (atlas == null || engine == null) return;
+
+                int atlasCount = oi.AsteroidCanBePushHowMuch(player, atlas);
                 int engineCount = oi.AsteroidCanBePushHowMuch(player, engine);
 
-                // Create a dedicated TMP element for tow requirements, placed to the LEFT
-                // of moonsTextMeshPro as a sibling. moonsTextMeshPro is left completely
-                // untouched so the game's original asteroid-type tooltip keeps working.
-                var moonsRT = moonsTmp.rectTransform;
                 var towGo = new GameObject("TowRequirements");
                 towGo.transform.SetParent(moonsTmp.transform.parent, false);
-                towGo.transform.SetAsLastSibling(); // render on top of resource icons
+                towGo.transform.SetAsLastSibling();
 
                 var towTmp = towGo.AddComponent<TextMeshProUGUI>();
                 towTmp.font = moonsTmp.font;
@@ -277,28 +392,22 @@ namespace SimpleTweaks
                 towTmp.alignment = TextAlignmentOptions.MidlineRight;
                 towTmp.text = atlasCount + "A/" + engineCount + "E";
 
-                // Measure actual text width so the hitbox is tight around the text only.
                 towTmp.ForceMeshUpdate();
                 float towWidth = Mathf.Ceil(towTmp.preferredWidth) + 4f;
 
-                // Right-align tow label immediately left of the type-letter column (moonsRT),
-                // with only a small gap. The hitbox is exactly as wide as the text.
                 var towRT = towGo.GetComponent<RectTransform>();
                 towRT.anchorMin = moonsRT.anchorMin;
                 towRT.anchorMax = moonsRT.anchorMax;
-                towRT.pivot     = new Vector2(1f, moonsRT.pivot.y);
+                towRT.pivot = new Vector2(1f, moonsRT.pivot.y);
                 towRT.sizeDelta = new Vector2(towWidth, moonsRT.sizeDelta.y);
-                // Place tow text centred in the free space inside the OBJECTS column:
-                // right edge at the midpoint of moonsRT (halfway between left and right edges).
-                float moonsRightEdge = moonsRT.anchoredPosition.x + moonsRT.sizeDelta.x * (1f - moonsRT.pivot.x);
-                towRT.anchoredPosition = new Vector2(moonsRightEdge - moonsRT.sizeDelta.x * 0.5f, moonsRT.anchoredPosition.y);
+                float edge = moonsRT.anchoredPosition.x + moonsRT.sizeDelta.x * (1f - moonsRT.pivot.x);
+                towRT.anchoredPosition = new Vector2(edge - moonsRT.sizeDelta.x * 0.5f, moonsRT.anchoredPosition.y);
 
-                var oiRef     = oi;
-                var atlasRef  = atlas;
+                var oiRef = oi;
+                var atlasRef = atlas;
                 var engineRef = engine;
-
-                var tt = towGo.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 = () =>
+                var tt2 = towGo.AddComponent<ShowToolTip>();
+                tt2.CustomTextFromCodeRefreshText2 = () =>
                 {
                     Company p = MonoBehaviourSingleton<GameManager>.Instance.Player;
                     int a = oiRef.AsteroidCanBePushHowMuch(p, atlasRef);
@@ -312,12 +421,27 @@ namespace SimpleTweaks
                 Plugin.Log.LogError("[SimpleTweaks] Patch_SearchRow_Start: " + ex);
             }
         }
-    }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 3: Ctrl+100 in the cycle-count spinner (TextIntUpDown).
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(TextIntUpDown), "AddClick")]
+
+
+        private static System.Collections.IEnumerator ReExpandParent(
+            ObjectInfo parentOI, ObjectInfoGroups parentGroup)
+        {
+            yield return null;
+            yield return null;
+            var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                .GetWindow<SearchObjectWindow>();
+            SearchRow parentRow = null;
+            if (parentOI != null)
+                parentRow = window.FindSearchRow(parentOI);
+            if (parentRow == null && parentGroup != null)
+                parentRow = window.FindSearchRow(parentGroup);
+            if (parentRow != null && !parentRow.IsExpand)
+            {
+                parentRow.OnClickArrowButton();
+            }
+            else if (parentRow == null) { }
+        }
     public static class Patch_TextIntUpDown_AddClick
     {
         static bool Prefix(TextIntUpDown __instance)
@@ -551,396 +675,596 @@ namespace SimpleTweaks
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on the addMulti (+) button for module cargo rows.
-    // RefreshAddMulti() is called after SetData and whenever availability changes.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(ResorceRow), nameof(ResorceRow.RefreshAddMulti))]
-    public static class Patch_ResorceRow_RefreshAddMulti
-    {
-        private static readonly FieldInfo AddMultiField =
-            typeof(ResorceRow).GetField("addMulti", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        static void Postfix(ResorceRow __instance)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Feature 9b: Shift+Click on the X button (upper-right corner of a
+    // facility icon in the Object Info list) cancels ALL facilities under
+    // construction on that body.
+    // ─────────────────────────────────────────────────────────────────────────
+    [HarmonyPatch(typeof(UIFacilityList), "CancelBuilding")]
+    public static class Patch_UIFacilityList_CancelAllBuildings
+    {
+        static bool Prefix(UIFacilityList __instance, UIRowFacility element)
         {
+            if (!Input.GetKey(KeyCode.LeftShift)) return true;
             try
             {
-                var addMulti = AddMultiField?.GetValue(__instance) as UnityEngine.UI.Button;
-                if (addMulti == null || !addMulti.gameObject.activeSelf) return;
+                Facility facility = element?.Facility;
+                if (facility == null || facility.BuildProgress >= 1f) return true;
 
-                var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
-                    ?? addMulti.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl");
+                ObjectInfoData oid = facility.ObjectInfoData;
+                var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
+                foreach (Facility f in toCancel)
+                    f.CancelBuild();
+
+                // Refresh the existing ObjectInfoWindow in place (don't reopen)
+                var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                    .GetWindow<ObjectInfoWindow>();
+                if (window != null && window.Open)
+                    window.SetData(oid.ObjectInfo);
+                return false;
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_RefreshAddMulti: " + ex);
-            }
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on the delete (−) button for module cargo rows, and
-    // Shift+Click / Ctrl+Click support to remove 10 / 100 rows at once.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(ResorceRow), "SetData",
-        new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
-    public static class Patch_ResorceRow_SetData
-    {
-        private static readonly FieldInfo ButonDeleteField =
-            typeof(ResorceRow).GetField("butonDelete", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        static void Postfix(ResorceRow __instance)
-        {
-            try
-            {
-                if (__instance.CargoResourceTypeType() != EResourceTypeType.modules) return;
-
-                var butonDelete = ButonDeleteField?.GetValue(__instance) as UnityEngine.UI.Button;
-                if (butonDelete == null) return;
-
-                var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
-                    ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl");
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_SetData: " + ex);
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(ResorceRow), "OnButtonClickDelete")]
-    public static class Patch_ResorceRow_OnButtonClickDelete_Multi
-    {
-        private static bool _inMultiDelete = false;
-
-        static bool Prefix(ResorceRow __instance)
-        {
-            if (_inMultiDelete) return true;
-            if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.LeftControl))
+                Plugin.Log.LogError("[SimpleTweaks] Patch_UIFacilityList_CancelAllBuildings: " + ex);
                 return true;
-
-            try
-            {
-                if (__instance.CargoResourceTypeType() != EResourceTypeType.modules)
-                    return true;
             }
-            catch { return true; }
-
-            SpaceModuleDescriptor ft = __instance.FacilityType();
-            if (ft == null) return true;
-
-            var rList = Traverse.Create(__instance).Field("resourcesListParent")
-                .GetValue<ResourcesList>();
-            if (rList == null) return true;
-
-            // count-1 additional deletes (the original delete handles __instance itself)
-            int extra = (Input.GetKey(KeyCode.LeftControl) ? 100 : 10) - 1;
-
-            _inMultiDelete = true;
-            try
-            {
-                for (int i = 0; i < extra; i++)
-                {
-                    // Re-query each iteration: the list shrinks as rows are deleted
-                    ResorceRow next = null;
-                    foreach (var r in rList.listResorces)
-                    {
-                        if (r == __instance) continue;
-                        SpaceModuleDescriptor rft = null;
-                        try { rft = r.FacilityType(); } catch { continue; }
-                        if (rft == ft) { next = r; break; }
-                    }
-                    if (next == null) break;
-                    next.OnButtonClickDeletePublic();
-                }
-            }
-            finally
-            {
-                _inMultiDelete = false;
-            }
-
-            return true; // let original handle __instance
         }
     }
-
     // ─────────────────────────────────────────────────────────────────────────
-    // Feature 10: Plan Mission — "↑ ORBIT / ↓ SURFACE" quick-destination button.
-    //
-    // When origin is a surface body (planet, moon, asteroid …) the button reads
-    // "↑ ORBIT" and sets the destination to that body's low orbit.
-    // When origin is an orbit it reads "↓ SURFACE" and sets the destination to
-    // the parent body.  The button is hidden whenever no applicable counterpart
-    // exists (e.g. unknown origin or a body with no associated orbit).
-    //
-    // The button is added as a child of the destination ObjectSearchInputField,
-    // anchored to its right edge so it sits just outside the input box.
+    // Tooltip on the facility icon X button.
     // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(PMTabDestination), "Awake")]
-    public static class Patch_PMTabDestination_DestShortcut
+    [HarmonyPatch(typeof(UIFacilityList), "SetData")]
+    public static class Patch_UIFacilityList_SetData_Tooltip
     {
-        private static readonly FieldInfo DestInputField =
-            typeof(PMTabDestination).GetField("destinationInput",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo StartInputField =
-            typeof(PMTabDestination).GetField("startInput",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo SearchBtnOnInput =
-            typeof(ObjectSearchInputField).GetField("searchButton",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-        // instance → (button, label) – used by the refresh patches below
-        internal static readonly Dictionary<PMTabDestination, (UnityEngine.UI.Button btn, TextMeshProUGUI lbl)> Registry =
-            new Dictionary<PMTabDestination, (UnityEngine.UI.Button, TextMeshProUGUI)>();
-
-        private const float BtnWidth = 22f;
-        private const float BtnInset = 2f;
-
-        static void Postfix(PMTabDestination __instance)
+        static void Postfix(UIFacilityList __instance)
         {
             try
             {
-                var destInput  = DestInputField?.GetValue(__instance)  as ObjectSearchInputField;
-                var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
-                if (destInput == null || startInput == null) return;
-                var searchBtn  = SearchBtnOnInput?.GetValue(destInput) as UnityEngine.UI.Button;
-
-                // ── build button game object ───────────────────────────────
-                var btnGo = new GameObject("ST_DestShortcut");
-                // Parent to the destination input; the button's rect extends
-                // outside the input's bounds to the right (no masking at root).
-                btnGo.transform.SetParent(destInput.transform, false);
-                btnGo.transform.SetAsLastSibling();
-
-                // Background – copy style from the ⇄ switch button
-                var img    = btnGo.AddComponent<UnityEngine.UI.Image>();
-                var srcImg = searchBtn?.GetComponent<UnityEngine.UI.Image>();
-                if (srcImg != null)
+                string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings");
+                foreach (var row in __instance.CreateRows)
                 {
-                    img.sprite   = srcImg.sprite;
-                    img.color    = srcImg.color;
-                    img.type     = srcImg.type;
-                    img.material = srcImg.material;
+                    var btn = row.ButtonCancel;
+                    if (btn == null) continue;
+                    var existing = btn.gameObject.GetComponents<ShowToolTip>();
+                    foreach (var st in existing)
+                        UnityEngine.Object.Destroy(st);
+                    var tt = btn.gameObject.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCode = tip;
+                    tt.CustomTextFromCodeRefreshText2 = () => tip;
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError("[SimpleTweaks] Patch_UIFacilityList_SetData_Tooltip: " + ex);
+            }
+        }
+
+        // Feature 9c: Shift+Click on the X (cross) button in a Spacecraft or
+        // Launch Vehicle construction queue row cancels the ENTIRE construction
+        // queue for that body.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(UIRowRocket), "OnCancelBuildClick")]
+        public static class Patch_UIRowRocket_CancelAllConstruction
+        {
+            static bool Prefix(UIRowRocket __instance)
+            {
+                if (!Input.GetKey(KeyCode.LeftShift)) return true;
+                try
+                {
+                    var rcd = __instance.CurrentRowRocketData?.rConstruct;
+                    if (rcd == null || rcd.BuildProgress >= 1f) return true;
+
+                    var oid = rcd.ObjectInfoData;
+                    var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .GetWindow<ObjectInfoWindow>();
+                    var currentOI = window?.ObjectInfoCurrent;
+
+                    var constructions = oid.GetListRocketConstruct()
+                        .Where(c => c.BuildProgress < 1f).ToList();
+                    foreach (var c in constructions)
+                        c.CancelBuild();
+
+                    if (window != null && window.Open)
+                        window.SetData(currentOI ?? oid.ObjectInfo);
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_UIRowRocket_CancelAllConstruction: " + ex);
+                    return true;
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────────
+        // Tooltip on the SC/LC construction queue X button.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(UIRowRocket), "Awake")]
+        public static class Patch_UIRowRocket_Awake_Tooltip
+        {
+            static void Postfix(UIRowRocket __instance)
+            {
+                try
+                {
+                    var btn = Traverse.Create(__instance)
+                        .Field("buttonCancelConstruction")
+                        .GetValue<UnityEngine.UI.Button>();
+                    if (btn == null) return;
+                    string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
+                    var tt = btn.gameObject.GetComponent<ShowToolTip>()
+                        ?? btn.gameObject.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCode = tip;
+                    tt.CustomTextFromCodeRefreshText2 = () => tip;
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_UIRowRocket_Awake_Tooltip: " + ex);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 9d: Shift+Click on the CANCEL BUILDING button in the Spacecraft
+        // / Launch Vehicle info window cancels ALL constructions of that type
+        // (spacecraft or launch vehicles) on the body.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(SpaceCraftInfoWindow), "OnCancelBuildButtonClick")]
+        public static class Patch_SpaceCraftInfoWindow_CancelAllConstruction
+        {
+            static bool Prefix(SpaceCraftInfoWindow __instance)
+            {
+                if (!Input.GetKey(KeyCode.LeftShift)) return true;
+                try
+                {
+                    var rcd = Traverse.Create(__instance).Field("rowRocketData")
+                        .GetValue<RowRocketData>()?.rConstruct;
+                    if (rcd == null || rcd.BuildProgress >= 1f) return true;
+
+                    var oid = rcd.ObjectInfoData;
+                    bool isSC = rcd.SpacecraftType != null;
+                    var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .GetWindow<ObjectInfoWindow>();
+                    var currentOI = window?.ObjectInfoCurrent;
+
+                    var constructions = oid.GetListRocketConstruct()
+                        .Where(c => c.BuildProgress < 1f)
+                        .Where(c => isSC ? c.SpacecraftType != null : c.LaunchVehicleType != null)
+                        .ToList();
+                    foreach (var c in constructions)
+                        c.CancelBuild();
+
+                    __instance.HideImmediately();
+                    if (window != null && window.Open)
+                        window.SetData(currentOI ?? oid.ObjectInfo);
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftInfoWindow_CancelAllConstruction: " + ex);
+                    return true;
+                }
+            }
+        }
+        // Tooltip on the CANCEL BUILDING button in SpacecraftInfoWindow.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(SpaceCraftInfoWindow), "Awake")]
+        public static class Patch_SpaceCraftInfoWindow_Awake_Tooltip
+        {
+            static void Postfix(SpaceCraftInfoWindow __instance)
+            {
+                try
+                {
+                    var btn = Traverse.Create(__instance)
+                        .Field("cancelBuildButton")
+                        .GetValue<UnityEngine.UI.Button>();
+                    if (btn == null) return;
+                    string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
+                    var tt = btn.gameObject.GetComponent<ShowToolTip>()
+                        ?? btn.gameObject.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCode = tip;
+                    tt.CustomTextFromCodeRefreshText2 = () => tip;
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftInfoWindow_Awake_Tooltip: " + ex);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Tooltip on the addMulti (+) button for module cargo rows.
+        // RefreshAddMulti() is called after SetData and whenever availability changes.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(ResorceRow), nameof(ResorceRow.RefreshAddMulti))]
+        public static class Patch_ResorceRow_RefreshAddMulti
+        {
+            private static readonly FieldInfo AddMultiField =
+                typeof(ResorceRow).GetField("addMulti", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            static void Postfix(ResorceRow __instance)
+            {
+                try
+                {
+                    var addMulti = AddMultiField?.GetValue(__instance) as UnityEngine.UI.Button;
+                    if (addMulti == null || !addMulti.gameObject.activeSelf) return;
+
+                    var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
+                        ?? addMulti.gameObject.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCodeRefreshText2 =
+                        () => LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl");
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_RefreshAddMulti: " + ex);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Tooltip on the delete (−) button for module cargo rows, and
+        // Shift+Click / Ctrl+Click support to remove 10 / 100 rows at once.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(ResorceRow), "SetData",
+            new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
+        public static class Patch_ResorceRow_SetData
+        {
+            private static readonly FieldInfo ButonDeleteField =
+                typeof(ResorceRow).GetField("butonDelete", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            static void Postfix(ResorceRow __instance)
+            {
+                try
+                {
+                    if (__instance.CargoResourceTypeType() != EResourceTypeType.modules) return;
+
+                    var butonDelete = ButonDeleteField?.GetValue(__instance) as UnityEngine.UI.Button;
+                    if (butonDelete == null) return;
+
+                    var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
+                        ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCodeRefreshText2 =
+                        () => LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl");
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_SetData: " + ex);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(ResorceRow), "OnButtonClickDelete")]
+        public static class Patch_ResorceRow_OnButtonClickDelete_Multi
+        {
+            private static bool _inMultiDelete = false;
+
+            static bool Prefix(ResorceRow __instance)
+            {
+                if (_inMultiDelete) return true;
+                if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.LeftControl))
+                    return true;
+
+                try
+                {
+                    if (__instance.CargoResourceTypeType() != EResourceTypeType.modules)
+                        return true;
+                }
+                catch { return true; }
+
+                SpaceModuleDescriptor ft = __instance.FacilityType();
+                if (ft == null) return true;
+
+                var rList = Traverse.Create(__instance).Field("resourcesListParent")
+                    .GetValue<ResourcesList>();
+                if (rList == null) return true;
+
+                // count-1 additional deletes (the original delete handles __instance itself)
+                int extra = (Input.GetKey(KeyCode.LeftControl) ? 100 : 10) - 1;
+
+                _inMultiDelete = true;
+                try
+                {
+                    for (int i = 0; i < extra; i++)
+                    {
+                        // Re-query each iteration: the list shrinks as rows are deleted
+                        ResorceRow next = null;
+                        foreach (var r in rList.listResorces)
+                        {
+                            if (r == __instance) continue;
+                            SpaceModuleDescriptor rft = null;
+                            try { rft = r.FacilityType(); } catch { continue; }
+                            if (rft == ft) { next = r; break; }
+                        }
+                        if (next == null) break;
+                        next.OnButtonClickDeletePublic();
+                    }
+                }
+                finally
+                {
+                    _inMultiDelete = false;
                 }
 
-                var btn = btnGo.AddComponent<UnityEngine.UI.Button>();
-                if (searchBtn != null) btn.colors = searchBtn.colors;
-                btn.targetGraphic = img;
+                return true; // let original handle __instance
+            }
+        }
 
-                // ── label ─────────────────────────────────────────────────
-                var lblGo = new GameObject("Lbl");
-                lblGo.transform.SetParent(btnGo.transform, false);
-                var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 10: Plan Mission — "↑ ORBIT / ↓ SURFACE" quick-destination button.
+        //
+        // When origin is a surface body (planet, moon, asteroid …) the button reads
+        // "↑ ORBIT" and sets the destination to that body's low orbit.
+        // When origin is an orbit it reads "↓ SURFACE" and sets the destination to
+        // the parent body.  The button is hidden whenever no applicable counterpart
+        // exists (e.g. unknown origin or a body with no associated orbit).
+        //
+        // The button is added as a child of the destination ObjectSearchInputField,
+        // anchored to its right edge so it sits just outside the input box.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(PMTabDestination), "Awake")]
+        public static class Patch_PMTabDestination_DestShortcut
+        {
+            private static readonly FieldInfo DestInputField =
+                typeof(PMTabDestination).GetField("destinationInput",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+            private static readonly FieldInfo StartInputField =
+                typeof(PMTabDestination).GetField("startInput",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+            private static readonly FieldInfo SearchBtnOnInput =
+                typeof(ObjectSearchInputField).GetField("searchButton",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
 
-                // Borrow font from the destination input's own TMP text
-                var refTmp = destInput.GetComponentInChildren<TextMeshProUGUI>();
-                if (refTmp != null)
+            // instance → (button, label) – used by the refresh patches below
+            internal static readonly Dictionary<PMTabDestination, (UnityEngine.UI.Button btn, TextMeshProUGUI lbl)> Registry =
+                new Dictionary<PMTabDestination, (UnityEngine.UI.Button, TextMeshProUGUI)>();
+
+            private const float BtnWidth = 22f;
+            private const float BtnInset = 2f;
+
+            static void Postfix(PMTabDestination __instance)
+            {
+                try
                 {
-                    lbl.font               = refTmp.font;
-                    lbl.fontSharedMaterial = refTmp.fontSharedMaterial;
-                }
-                lbl.fontSize         = 14f;
-                lbl.alignment        = TextAlignmentOptions.Center;
-                lbl.color            = Color.white;
-                lbl.enableWordWrapping = false;
+                    var destInput = DestInputField?.GetValue(__instance) as ObjectSearchInputField;
+                    var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
+                    if (destInput == null || startInput == null) return;
+                    var searchBtn = SearchBtnOnInput?.GetValue(destInput) as UnityEngine.UI.Button;
 
-                var lblRT = lblGo.GetComponent<RectTransform>();
-                lblRT.anchorMin  = Vector2.zero;
-                lblRT.anchorMax  = Vector2.one;
-                lblRT.offsetMin  = Vector2.zero;
-                lblRT.offsetMax  = Vector2.zero;
+                    // ── build button game object ───────────────────────────────
+                    var btnGo = new GameObject("ST_DestShortcut");
+                    // Parent to the destination input; the button's rect extends
+                    // outside the input's bounds to the right (no masking at root).
+                    btnGo.transform.SetParent(destInput.transform, false);
+                    btnGo.transform.SetAsLastSibling();
 
-                // ── position: inside destInput, flush on the right ─────────
-                var btnRT = btnGo.GetComponent<RectTransform>();
-                btnRT.anchorMin = new Vector2(1f, 0f);
-                btnRT.anchorMax = new Vector2(1f, 1f);
-                btnRT.pivot     = new Vector2(1f, 0.5f);
-                btnRT.offsetMin = new Vector2(-(BtnWidth + BtnInset), BtnInset);
-                btnRT.offsetMax = new Vector2(-BtnInset, -BtnInset);
+                    // Background – copy style from the ⇄ switch button
+                    var img = btnGo.AddComponent<UnityEngine.UI.Image>();
+                    var srcImg = searchBtn?.GetComponent<UnityEngine.UI.Image>();
+                    if (srcImg != null)
+                    {
+                        img.sprite = srcImg.sprite;
+                        img.color = srcImg.color;
+                        img.type = srcImg.type;
+                        img.material = srcImg.material;
+                    }
 
-                // ── tooltip ───────────────────────────────────────────────
-                var tt = btnGo.AddComponent<ShowToolTip>();
-                var startRef = startInput;
-                tt.CustomTextFromCodeRefreshText2 = () =>
-                {
-                    var orig = startRef.ObjectInfo;
-                    if (orig == null) return string.Empty;
-                    bool fromOrbit = orig.objectTypes == EObjectTypes.Orbit
-                                  || orig.objectTypes == EObjectTypes.SolarOrbit;
-                    return LEManager.Get(fromOrbit
-                        ? "SimpleTweaks.Tooltip.GoToSurface"
-                        : "SimpleTweaks.Tooltip.GoToOrbit");
-                };
+                    var btn = btnGo.AddComponent<UnityEngine.UI.Button>();
+                    if (searchBtn != null) btn.colors = searchBtn.colors;
+                    btn.targetGraphic = img;
 
-                // ── click ─────────────────────────────────────────────────
-                var destRef = destInput;
-                btn.onClick.AddListener(() =>
-                {
-                    try
+                    // ── label ─────────────────────────────────────────────────
+                    var lblGo = new GameObject("Lbl");
+                    lblGo.transform.SetParent(btnGo.transform, false);
+                    var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+
+                    // Borrow font from the destination input's own TMP text
+                    var refTmp = destInput.GetComponentInChildren<TextMeshProUGUI>();
+                    if (refTmp != null)
+                    {
+                        lbl.font = refTmp.font;
+                        lbl.fontSharedMaterial = refTmp.fontSharedMaterial;
+                    }
+                    lbl.fontSize = 14f;
+                    lbl.alignment = TextAlignmentOptions.Center;
+                    lbl.color = Color.white;
+                    lbl.enableWordWrapping = false;
+
+                    var lblRT = lblGo.GetComponent<RectTransform>();
+                    lblRT.anchorMin = Vector2.zero;
+                    lblRT.anchorMax = Vector2.one;
+                    lblRT.offsetMin = Vector2.zero;
+                    lblRT.offsetMax = Vector2.zero;
+
+                    // ── position: inside destInput, flush on the right ─────────
+                    var btnRT = btnGo.GetComponent<RectTransform>();
+                    btnRT.anchorMin = new Vector2(1f, 0f);
+                    btnRT.anchorMax = new Vector2(1f, 1f);
+                    btnRT.pivot = new Vector2(1f, 0.5f);
+                    btnRT.offsetMin = new Vector2(-(BtnWidth + BtnInset), BtnInset);
+                    btnRT.offsetMax = new Vector2(-BtnInset, -BtnInset);
+
+                    // ── tooltip ───────────────────────────────────────────────
+                    var tt = btnGo.AddComponent<ShowToolTip>();
+                    var startRef = startInput;
+                    tt.CustomTextFromCodeRefreshText2 = () =>
                     {
                         var orig = startRef.ObjectInfo;
-                        if (orig == null) return;
-                        var target = GetCounterpart(orig);
-                        if (target == null) return;
-                        destRef.ObjectInfo = target;
-                        destRef.InvokeOnObjectSelect();
-                    }
-                    catch (Exception ex)
+                        if (orig == null) return string.Empty;
+                        bool fromOrbit = orig.objectTypes == EObjectTypes.Orbit
+                                      || orig.objectTypes == EObjectTypes.SolarOrbit;
+                        return LEManager.Get(fromOrbit
+                            ? "SimpleTweaks.Tooltip.GoToSurface"
+                            : "SimpleTweaks.Tooltip.GoToOrbit");
+                    };
+
+                    // ── click ─────────────────────────────────────────────────
+                    var destRef = destInput;
+                    btn.onClick.AddListener(() =>
                     {
-                        Plugin.Log.LogError("[SimpleTweaks] DestShortcut click: " + ex);
-                    }
-                });
+                        try
+                        {
+                            var orig = startRef.ObjectInfo;
+                            if (orig == null) return;
+                            var target = GetCounterpart(orig);
+                            if (target == null) return;
+                            destRef.ObjectInfo = target;
+                            destRef.InvokeOnObjectSelect();
+                        }
+                        catch (Exception ex)
+                        {
+                            Plugin.Log.LogError("[SimpleTweaks] DestShortcut click: " + ex);
+                        }
+                    });
 
-                Registry[__instance] = (btn, lbl);
-                RefreshButton(startInput, btn, lbl);
+                    Registry[__instance] = (btn, lbl);
+                    RefreshButton(startInput, btn, lbl);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_Awake: " + ex);
+                }
             }
-            catch (Exception ex)
+
+            // Returns the orbital counterpart of a body, or null if none exists.
+            internal static ObjectInfo GetCounterpart(ObjectInfo origin)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_Awake: " + ex);
+                if (origin == null) return null;
+
+                // Orbit around a planet/moon → parent body
+                if (origin.objectTypes == EObjectTypes.Orbit)
+                    return origin.parentObjectInfo;
+
+                // SolarOrbit (orbit around the Sun) → Sun is not a valid destination
+                if (origin.objectTypes == EObjectTypes.SolarOrbit)
+                    return null;
+
+                // Surface → prefer the low-orbit NBody reference on the body
+                if (origin.LowOrbitCustom != null)
+                {
+                    var oi = origin.LowOrbitCustom.GetObjectInfo();
+                    if (oi != null) return oi;
+                }
+
+                // Fallback: first Orbit-type child (not SolarOrbit)
+                return origin.listChildren.FirstOrDefault(c =>
+                    c != null && c.objectTypes == EObjectTypes.Orbit);
+            }
+
+            // Show/hide the button and update its label text.
+            internal static void RefreshButton(
+                ObjectSearchInputField startInput,
+                UnityEngine.UI.Button btn,
+                TextMeshProUGUI lbl)
+            {
+                if (btn == null) return;
+                var origin = startInput?.ObjectInfo;
+                var counterpart = GetCounterpart(origin);
+                btn.gameObject.SetActive(counterpart != null);
+                if (counterpart == null) return;
+
+                bool fromOrbit = origin.objectTypes == EObjectTypes.Orbit
+                              || origin.objectTypes == EObjectTypes.SolarOrbit;
+                lbl.text = fromOrbit ? "\u2193" : "\u2191";
             }
         }
 
-        // Returns the orbital counterpart of a body, or null if none exists.
-        internal static ObjectInfo GetCounterpart(ObjectInfo origin)
+        // Refresh when origin selection changes.
+        [HarmonyPatch(typeof(PMTabDestination), "StartInputOnObjectSelect")]
+        public static class Patch_PMTabDestination_StartInputOnObjectSelect
         {
-            if (origin == null) return null;
+            private static readonly FieldInfo StartInputField =
+                typeof(PMTabDestination).GetField("startInput",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
 
-            // Orbit around a planet/moon → parent body
-            if (origin.objectTypes == EObjectTypes.Orbit)
-                return origin.parentObjectInfo;
-
-            // SolarOrbit (orbit around the Sun) → Sun is not a valid destination
-            if (origin.objectTypes == EObjectTypes.SolarOrbit)
-                return null;
-
-            // Surface → prefer the low-orbit NBody reference on the body
-            if (origin.LowOrbitCustom != null)
+            static void Postfix(PMTabDestination __instance)
             {
-                var oi = origin.LowOrbitCustom.GetObjectInfo();
-                if (oi != null) return oi;
+                try
+                {
+                    if (!Patch_PMTabDestination_DestShortcut.Registry
+                            .TryGetValue(__instance, out var pair)) return;
+                    var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
+                    if (startInput == null) return;
+                    Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_StartInputOnObjectSelect: " + ex);
+                }
             }
-
-            // Fallback: first Orbit-type child (not SolarOrbit)
-            return origin.listChildren.FirstOrDefault(c =>
-                c != null && c.objectTypes == EObjectTypes.Orbit);
         }
 
-        // Show/hide the button and update its label text.
-        internal static void RefreshButton(
-            ObjectSearchInputField startInput,
-            UnityEngine.UI.Button btn,
-            TextMeshProUGUI lbl)
+        // Refresh when the destination tab is activated (origin pre-filled by the game).
+        [HarmonyPatch(typeof(PMTabDestination), "ActiveTab")]
+        public static class Patch_PMTabDestination_ActiveTab
         {
-            if (btn == null) return;
-            var origin      = startInput?.ObjectInfo;
-            var counterpart = GetCounterpart(origin);
-            btn.gameObject.SetActive(counterpart != null);
-            if (counterpart == null) return;
+            private static readonly FieldInfo StartInputField =
+                typeof(PMTabDestination).GetField("startInput",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
 
-            bool fromOrbit = origin.objectTypes == EObjectTypes.Orbit
-                          || origin.objectTypes == EObjectTypes.SolarOrbit;
-            lbl.text = fromOrbit ? "\u2193" : "\u2191";
+            static void Postfix(PMTabDestination __instance)
+            {
+                try
+                {
+                    if (!Patch_PMTabDestination_DestShortcut.Registry
+                            .TryGetValue(__instance, out var pair)) return;
+                    var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
+                    if (startInput == null) return;
+                    Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_ActiveTab: " + ex);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 11: Mission Planner Cargo — crew slider unlocked on all
+        // crew-module rows (not just the last).
+        //
+        // BlockDropDown normally locks the module dropdown, delete button, + button,
+        // and crew slider on every row except the last.  This patch overrides
+        // BlockDropDown for crew-module rows: it locks the module dropdown, delete
+        // button, and + button as usual, but leaves sliderCrew.interactable
+        // untouched so the crew slider remains editable on all rows.
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // BlockDropDown for crew-module rows: lock the module dropdown,
+        // delete button, and + button as usual, but leave sliderCrew.interactable
+        // untouched so the crew slider remains editable on all rows.
+        [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
+        public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
+        {
+            private static readonly FieldInfo ModuleDropDownField =
+                typeof(ResorceRow).GetField("moduleDropDown",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+            private static readonly FieldInfo ButonDeleteFieldB =
+                typeof(ResorceRow).GetField("butonDelete",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+            private static readonly FieldInfo AddMultiFieldB =
+                typeof(ResorceRow).GetField("addMulti",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+            static bool Prefix(ResorceRow __instance)
+            {
+                if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
+                try
+                {
+                    var dd = ModuleDropDownField?.GetValue(__instance) as DropDownEnum;
+                    if (dd?.dropDown != null) dd.dropDown.interactable = false;
+                    var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+                    if (del != null) del.interactable = false;
+                    var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+                    if (am != null) am.gameObject.SetActive(false);
+                    return false; // skip original (which would also lock the crew slider)
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_BlockDropDown_KeepCrewSlider: " + ex);
+                    return true; // fallback: run original
+                }
+            }
         }
     }
-
-    // Refresh when origin selection changes.
-    [HarmonyPatch(typeof(PMTabDestination), "StartInputOnObjectSelect")]
-    public static class Patch_PMTabDestination_StartInputOnObjectSelect
-    {
-        private static readonly FieldInfo StartInputField =
-            typeof(PMTabDestination).GetField("startInput",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-        static void Postfix(PMTabDestination __instance)
-        {
-            try
-            {
-                if (!Patch_PMTabDestination_DestShortcut.Registry
-                        .TryGetValue(__instance, out var pair)) return;
-                var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
-                if (startInput == null) return;
-                Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_StartInputOnObjectSelect: " + ex);
-            }
-        }
-    }
-
-    // Refresh when the destination tab is activated (origin pre-filled by the game).
-    [HarmonyPatch(typeof(PMTabDestination), "ActiveTab")]
-    public static class Patch_PMTabDestination_ActiveTab
-    {
-        private static readonly FieldInfo StartInputField =
-            typeof(PMTabDestination).GetField("startInput",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-        static void Postfix(PMTabDestination __instance)
-        {
-            try
-            {
-                if (!Patch_PMTabDestination_DestShortcut.Registry
-                        .TryGetValue(__instance, out var pair)) return;
-                var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
-                if (startInput == null) return;
-                Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_ActiveTab: " + ex);
-            }
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 11: Mission Planner Cargo — crew slider unlocked on all
-    // crew-module rows (not just the last).
-    //
-    // BlockDropDown normally locks the module dropdown, delete button, + button,
-    // and crew slider on every row except the last.  This patch overrides
-    // BlockDropDown for crew-module rows: it locks the module dropdown, delete
-    // button, and + button as usual, but leaves sliderCrew.interactable
-    // untouched so the crew slider remains editable on all rows.
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // BlockDropDown for crew-module rows: lock the module dropdown,
-    // delete button, and + button as usual, but leave sliderCrew.interactable
-    // untouched so the crew slider remains editable on all rows.
-    [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
-    public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
-    {
-        private static readonly FieldInfo ModuleDropDownField =
-            typeof(ResorceRow).GetField("moduleDropDown",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo ButonDeleteFieldB =
-            typeof(ResorceRow).GetField("butonDelete",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo AddMultiFieldB =
-            typeof(ResorceRow).GetField("addMulti",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-        static bool Prefix(ResorceRow __instance)
-        {
-            if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
-            try
-            {
-                var dd = ModuleDropDownField?.GetValue(__instance) as DropDownEnum;
-                if (dd?.dropDown != null) dd.dropDown.interactable = false;
-                var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
-                if (del != null) del.interactable = false;
-                var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
-                if (am != null) am.gameObject.SetActive(false);
-                return false; // skip original (which would also lock the crew slider)
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_BlockDropDown_KeepCrewSlider: " + ex);
-                return true; // fallback: run original
-            }
-        }
-    }
+}
 }
