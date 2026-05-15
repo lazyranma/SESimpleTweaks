@@ -8,9 +8,10 @@
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>bin\$(Configuration)\</OutputPath>
-    <AssemblyVersion>0.4.0.0</AssemblyVersion>
-    <FileVersion>0.4.0.0</FileVersion>
-    <InformationalVersion>0.4.0</InformationalVersion>
+    <PluginVersion>0.5.0</PluginVersion>
+    <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
+    <FileVersion>$(PluginVersion).0</FileVersion>
+    <InformationalVersion>$(PluginVersion)</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,6 +52,18 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+
+  <!-- Generate VersionConstants.cs from the single $(PluginVersion) property.
+       %3B escapes semicolons because MSBuild uses ; as an item separator. -->
+  <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
+    <WriteLinesToFile
+        File="$(IntermediateOutputPath)VersionConstants.cs"
+        Lines="internal static class VersionConstants { internal const string PluginVersion = &quot;$(PluginVersion)&quot;%3B }"
+        Overwrite="true" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)VersionConstants.cs" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="PackRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <PropertyGroup>

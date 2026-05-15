@@ -668,22 +668,6 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MirrorShadeBugFix: re-allocate mirrors/shades after a save is loaded.
-    // Calling AllocateMirrorsAcrossTargets(false) twice is idempotent, so this
-    // coexists safely with the standalone MirrorShadeBugFix plugin.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(Facility), nameof(Facility.OnAfterLoadSave))]
-    public static class Patch_Facility_OnAfterLoadSave
-    {
-        static void Postfix(Facility __instance)
-        {
-            SpaceMirrorOrShadeFacility mirror = __instance as SpaceMirrorOrShadeFacility;
-            if (mirror == null || mirror.Enabled <= 0) return;
-            mirror.AllocateMirrorsAcrossTargets(allocateExcess: false);
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Feature 10: Plan Mission — "↑ ORBIT / ↓ SURFACE" quick-destination button.
     //
     // When origin is a surface body (planet, moon, asteroid …) the button reads
@@ -913,77 +897,17 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Feature 11: Mission Planner Cargo — crew count copy on multi-add, and
-    // crew slider unlocked on all crew-module rows (not just the last).
+    // Feature 11: Mission Planner Cargo — crew slider unlocked on all
+    // crew-module rows (not just the last).
     //
-    // Part A: When the + button adds crew-compartment modules, seed each new
-    //         module with the same crew count shown on the current last row
-    //         (capped to the module's capacity). The game's SliderCrewChange
-    //         guard then caps the total to available crew automatically.
-    //
-    // Part B: Unlock the crew slider on every crew-module row. BlockDropDown
-    //         still locks the module dropdown, delete button, and + button on
-    //         non-last rows; it just no longer locks the crew slider for crew
-    //         module rows.
+    // BlockDropDown normally locks the module dropdown, delete button, + button,
+    // and crew slider on every row except the last.  This patch overrides
+    // BlockDropDown for crew-module rows: it locks the module dropdown, delete
+    // button, and + button as usual, but leaves sliderCrew.interactable
+    // untouched so the crew slider remains editable on all rows.
     // ─────────────────────────────────────────────────────────────────────────
-    internal static class CrewCopyState
-    {
-        internal static int PendingCrew = -1;
-    }
 
-    // Part A step 1 — capture desired crew from the current last crew row
-    // before the multi-add loop calls AddCargo repeatedly.
-    [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
-    public static class Patch_ResourcesList_OnClickMultiAdd_CrewCopy
-    {
-        static void Prefix(ResourcesList __instance)
-        {
-            CrewCopyState.PendingCrew = -1;
-            var rows = __instance.listResorces;
-            for (int i = rows.Count - 1; i >= 0; i--)
-            {
-                if (rows[i].CrewModuleOn)
-                {
-                    CrewCopyState.PendingCrew = (int)rows[i].CrewAmount;
-                    break;
-                }
-            }
-        }
-
-        static void Postfix()
-        {
-            CrewCopyState.PendingCrew = -1;
-        }
-    }
-
-    // Part A step 2 — override the default max-fill crewValue on each newly
-    // created Cargo entry with the captured amount.
-    [HarmonyPatch(typeof(PMTabCargo), "AddCargo",
-        new Type[] { typeof(SpaceModule), typeof(bool) })]
-    public static class Patch_PMTabCargo_AddCargo_CrewOverride
-    {
-        static void Postfix(PMTabCargo __instance)
-        {
-            if (CrewCopyState.PendingCrew < 0) return;
-            try
-            {
-                var cargoAll = Traverse.Create(__instance).Field("cargoAll").GetValue<CargoAll>();
-                if (cargoAll?.listCargo == null || cargoAll.listCargo.Count == 0) return;
-                var lastCargo = cargoAll.listCargo[cargoAll.listCargo.Count - 1];
-                if (lastCargo?.moduleData == null) return;
-                if (!lastCargo.moduleData.specialAbilityFacilityNew
-                        .HasFlag(ESpecialAbilityFacilityNew.CrewTransport)) return;
-                int cap = (int)lastCargo.moduleData.specialAbilityParameter;
-                lastCargo.crewValue = Math.Min(CrewCopyState.PendingCrew, cap);
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabCargo_AddCargo_CrewOverride: " + ex);
-            }
-        }
-    }
-
-    // Part B — BlockDropDown for crew-module rows: lock the module dropdown,
+    // BlockDropDown for crew-module rows: lock the module dropdown,
     // delete button, and + button as usual, but leave sliderCrew.interactable
     // untouched so the crew slider remains editable on all rows.
     [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]

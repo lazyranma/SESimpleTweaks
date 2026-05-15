@@ -4,7 +4,7 @@ using HarmonyLib;
 
 namespace SimpleTweaks
 {
-    [BepInPlugin("com.simpletweaks", "Simple Tweaks", "0.2.0")]
+    [BepInPlugin("com.simpletweaks", "Simple Tweaks", VersionConstants.PluginVersion)]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log;

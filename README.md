@@ -11,9 +11,12 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Clear build queue** — Shift+Click the "Cancel Building" button to cancel all facilities under construction on that celestial body.
 - **Deposit tooltips** — Hover over resource icons in the Object Search list to see the actual info for the largest deposit.
 - **Asteroid tow requirements** — Display Atlas/Engine requirements for asteroids and comets directly in Object Search.
-- **Mirror/Shade bug fix** — Corrects solar mirror thermal transfer physics on save load, compatible with the standalone MirrorShadeBugFix plugin.
+- ~~**Mirror/Shade bug fix** — Corrects solar mirror thermal transfer physics on save load.~~
 - **Quick to Orbit** — Small ↑/↓ button inside the destination field in Plan Mission that selects a body's orbit or a orbit's body.
-- **Unsticky Crew** — When clicking + to add crew compartment modules, newly added modules inherit the same crew count as the last module. The crew slider is unlocked for all modules.
+- **Unsticky Crew** — ~~When clicking + to add crew compartment modules, newly added modules inherit the same crew count as the last module.~~ The crew slider is unlocked for all modules.
+
+
+Struck-out tweaks were removed in v0.5.0 because the May 2026 open beta includes native fixes for them.
 
 ## Installation
 
