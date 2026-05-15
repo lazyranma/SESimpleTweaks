@@ -911,4 +911,112 @@ namespace SimpleTweaks
             }
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Feature 11: Mission Planner Cargo — crew count copy on multi-add, and
+    // crew slider unlocked on all crew-module rows (not just the last).
+    //
+    // Part A: When the + button adds crew-compartment modules, seed each new
+    //         module with the same crew count shown on the current last row
+    //         (capped to the module's capacity). The game's SliderCrewChange
+    //         guard then caps the total to available crew automatically.
+    //
+    // Part B: Unlock the crew slider on every crew-module row. BlockDropDown
+    //         still locks the module dropdown, delete button, and + button on
+    //         non-last rows; it just no longer locks the crew slider for crew
+    //         module rows.
+    // ─────────────────────────────────────────────────────────────────────────
+    internal static class CrewCopyState
+    {
+        internal static int PendingCrew = -1;
+    }
+
+    // Part A step 1 — capture desired crew from the current last crew row
+    // before the multi-add loop calls AddCargo repeatedly.
+    [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
+    public static class Patch_ResourcesList_OnClickMultiAdd_CrewCopy
+    {
+        static void Prefix(ResourcesList __instance)
+        {
+            CrewCopyState.PendingCrew = -1;
+            var rows = __instance.listResorces;
+            for (int i = rows.Count - 1; i >= 0; i--)
+            {
+                if (rows[i].CrewModuleOn)
+                {
+                    CrewCopyState.PendingCrew = (int)rows[i].CrewAmount;
+                    break;
+                }
+            }
+        }
+
+        static void Postfix()
+        {
+            CrewCopyState.PendingCrew = -1;
+        }
+    }
+
+    // Part A step 2 — override the default max-fill crewValue on each newly
+    // created Cargo entry with the captured amount.
+    [HarmonyPatch(typeof(PMTabCargo), "AddCargo",
+        new Type[] { typeof(SpaceModule), typeof(bool) })]
+    public static class Patch_PMTabCargo_AddCargo_CrewOverride
+    {
+        static void Postfix(PMTabCargo __instance)
+        {
+            if (CrewCopyState.PendingCrew < 0) return;
+            try
+            {
+                var cargoAll = Traverse.Create(__instance).Field("cargoAll").GetValue<CargoAll>();
+                if (cargoAll?.listCargo == null || cargoAll.listCargo.Count == 0) return;
+                var lastCargo = cargoAll.listCargo[cargoAll.listCargo.Count - 1];
+                if (lastCargo?.moduleData == null) return;
+                if (!lastCargo.moduleData.specialAbilityFacilityNew
+                        .HasFlag(ESpecialAbilityFacilityNew.CrewTransport)) return;
+                int cap = (int)lastCargo.moduleData.specialAbilityParameter;
+                lastCargo.crewValue = Math.Min(CrewCopyState.PendingCrew, cap);
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabCargo_AddCargo_CrewOverride: " + ex);
+            }
+        }
+    }
+
+    // Part B — BlockDropDown for crew-module rows: lock the module dropdown,
+    // delete button, and + button as usual, but leave sliderCrew.interactable
+    // untouched so the crew slider remains editable on all rows.
+    [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
+    public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
+    {
+        private static readonly FieldInfo ModuleDropDownField =
+            typeof(ResorceRow).GetField("moduleDropDown",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo ButonDeleteFieldB =
+            typeof(ResorceRow).GetField("butonDelete",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo AddMultiFieldB =
+            typeof(ResorceRow).GetField("addMulti",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+        static bool Prefix(ResorceRow __instance)
+        {
+            if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
+            try
+            {
+                var dd = ModuleDropDownField?.GetValue(__instance) as DropDownEnum;
+                if (dd?.dropDown != null) dd.dropDown.interactable = false;
+                var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+                if (del != null) del.interactable = false;
+                var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+                if (am != null) am.gameObject.SetActive(false);
+                return false; // skip original (which would also lock the crew slider)
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_BlockDropDown_KeepCrewSlider: " + ex);
+                return true; // fallback: run original
+            }
+        }
+    }
 }
