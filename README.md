@@ -14,8 +14,9 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - ~~**Mirror/Shade Bug Fix** — Corrects solar mirror thermal transfer physics on save load.~~
 - **Quick to Orbit** — Small ↑/↓ button inside the destination field in Plan Mission that selects a body's orbit or a orbit's body.
 - **Unsticky Crew** — ~~When clicking + to add crew compartment modules, newly added modules inherit the same crew count as the last module.~~ The crew slider is unlocked for all modules.
-- **Space Bin** — (v0.5+) Trash bin button in the Object Search list for every asteroid that can be deleted. 
-- **Full Cycle** — (v0.5+) Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
+- **Space Bin** — (v0.5) Trash bin button in the Object Search list for every asteroid that can be deleted. 
+- **Full Cycle** — (v0.5) Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
+- **Leave No Trace** — (v0.5) Hides resources in the Object Info stockpile that have trace amounts (< 0.01) left over from floating-point rounding errors in the construction cost discount system.
 
 > Struck-out tweaks were removed in v0.5 because the 0.26.5.15.14 open beta includes native fixes for them.
 
@@ -27,4 +28,4 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 ## Download
 Game version: 0.26.4.29.11. v0.4 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.4/SimpleTweaks.zip)
 
-Game version: 0.26.5.15.14. v0.5 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/latest/download/SimpleTweaks.zip) (open beta)
+Game version: 0.26.5.15.14. v0.5.2 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/latest/download/SimpleTweaks.zip) (open beta)

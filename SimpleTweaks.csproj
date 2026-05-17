@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>bin\$(Configuration)\</OutputPath>
-    <PluginVersion>0.5.1</PluginVersion>
+    <PluginVersion>0.5.2</PluginVersion>
     <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
     <FileVersion>$(PluginVersion).0</FileVersion>
     <InformationalVersion>$(PluginVersion)</InformationalVersion>

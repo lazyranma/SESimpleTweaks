@@ -1519,5 +1519,27 @@ namespace SimpleTweaks
                 }
             }
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hide stockpile resources with amount < 0.01 in ObjectInfoWindow.
+        // These trace amounts are floating-point artifacts from construction
+        // cost discounts, not real resources the player can use.
+        // ─────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(ObjectInfoWindow), nameof(ObjectInfoWindow.GetListRowResourcesDataToShowUI))]
+        public static class Patch_ObjectInfoWindow_HideTraceResources
+        {
+            static void Postfix(ref List<RowResourcesData> __result)
+            {
+                try
+                {
+                    if (__result == null || __result.Count == 0) return;
+                    __result = __result.Where(r => r.Value >= 0.01).ToList();
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_HideTraceResources: " + ex);
+                }
+            }
+        }
     }
 }
