@@ -13,6 +13,7 @@ using Game.ObjectInfoDataScripts.CustomFacilitiesAndModules;
 using Game.UI;
 using Game.UI.Windows.Elements;
 using Game.UI.Windows.Elements.ObjectInfoElements;
+using Game.UI.Windows.Elements.MissionsElements;
 using Game.UI.Windows.Elements.PlanMissionElements;
 using Game.UI.Windows.Elements.SearchObjectElements;
 using Game.UI.Windows.Windows;
@@ -23,6 +24,7 @@ using Manager;
 using ScriptableObjectScripts;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SimpleTweaks
 {
@@ -339,21 +341,21 @@ namespace SimpleTweaks
                     // Fallback trash icon (only if no sprite found)
                     if (trashSprite == null)
                     {
-                    var lblGo = new GameObject("Lbl");
-                    lblGo.transform.SetParent(delGo.transform, false);
-                    var lbl = lblGo.AddComponent<TextMeshProUGUI>();
-                    lbl.font = moonsTmp.font;
-                    lbl.fontSharedMaterial = moonsTmp.fontSharedMaterial;
-                    lbl.fontSize = 12f;
-                    lbl.color = new Color(0.9f, 0.3f, 0.3f, 1f);
-                    lbl.alignment = TextAlignmentOptions.Center;
-                    lbl.enableWordWrapping = false;
-                    lbl.text = "\u2716";
-                    var lblRT = lblGo.GetComponent<RectTransform>();
-                    lblRT.anchorMin = Vector2.zero;
-                    lblRT.anchorMax = Vector2.one;
-                    lblRT.offsetMin = Vector2.zero;
-                    lblRT.offsetMax = Vector2.zero;
+                        var lblGo = new GameObject("Lbl");
+                        lblGo.transform.SetParent(delGo.transform, false);
+                        var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+                        lbl.font = moonsTmp.font;
+                        lbl.fontSharedMaterial = moonsTmp.fontSharedMaterial;
+                        lbl.fontSize = 12f;
+                        lbl.color = new Color(0.9f, 0.3f, 0.3f, 1f);
+                        lbl.alignment = TextAlignmentOptions.Center;
+                        lbl.enableWordWrapping = false;
+                        lbl.text = "\u2716";
+                        var lblRT = lblGo.GetComponent<RectTransform>();
+                        lblRT.anchorMin = Vector2.zero;
+                        lblRT.anchorMax = Vector2.one;
+                        lblRT.offsetMin = Vector2.zero;
+                        lblRT.offsetMax = Vector2.zero;
 
                     }
                     // Tooltip
@@ -442,829 +444,1046 @@ namespace SimpleTweaks
             }
             else if (parentRow == null) { }
         }
-    public static class Patch_TextIntUpDown_AddClick
-    {
-        static bool Prefix(TextIntUpDown __instance)
+        public static class Patch_TextIntUpDown_AddClick
         {
-            if (!Input.GetKey(KeyCode.LeftControl)) return true;
-            __instance.INTValue += 100;
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(TextIntUpDown), "DownClick")]
-    public static class Patch_TextIntUpDown_DownClick
-    {
-        static bool Prefix(TextIntUpDown __instance)
-        {
-            if (!Input.GetKey(KeyCode.LeftControl)) return true;
-            __instance.INTValue -= 100;
-            return false;
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 5 & 6: Ctrl+100 in CountToAdd (SC/LV selection +/-).
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(CountToAdd), "OnClickAdd")]
-    public static class Patch_CountToAdd_OnClickAdd
-    {
-        public static int GetAddCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_CountToAdd_OnClickAdd), nameof(GetAddCount), "CountToAdd.OnClickAdd");
-    }
-
-    [HarmonyPatch(typeof(CountToAdd), "OnClickRemove")]
-    public static class Patch_CountToAdd_OnClickRemove
-    {
-        public static int GetAddCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_CountToAdd_OnClickRemove), nameof(GetAddCount), "CountToAdd.OnClickRemove");
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 5b: Ctrl+100 for module-cargo + button (ResourcesList).
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
-    public static class Patch_ResourcesList_OnClickMultiAdd
-    {
-        public static int GetAddCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_ResourcesList_OnClickMultiAdd), nameof(GetAddCount), "ResourcesList.OnClickMultiAdd");
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip hint on CountToAdd +/- buttons: localised Ctrl+Click hint appended
-    // to the existing Shift+Click text already shown by the game.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(CountToAdd), "SetData",
-        new Type[] { typeof(int), typeof(int), typeof(bool) })]
-    public static class Patch_CountToAdd_SetData
-    {
-        static void Postfix(CountToAdd __instance)
-        {
-            SetCtrlHint(__instance.addTooltip2);
-            SetCtrlHint(__instance.removeToolTip2);
-        }
-
-        private static void SetCtrlHint(ShowToolTip tt)
-        {
-            if (tt == null) return;
-            string baseText = tt.CustomTextFromCode;
-            if (string.IsNullOrEmpty(baseText)) return;
-            tt.CustomTextFromCodeRefreshText2 = () =>
-                baseText + "\n<color=grey>" + LEManager.Get("SimpleTweaks.Tooltip.CtrlHint") + "</color>";
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 7: Ctrl+100 facility builds in ObjectInfoWindow.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(ObjectInfoWindow), "FacilityListOnOnClickCreateFacility")]
-    public static class Patch_ObjectInfoWindow_FacilityBuildCount
-    {
-        public static int GetBuildCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_ObjectInfoWindow_FacilityBuildCount), nameof(GetBuildCount), "ObjectInfoWindow.FacilityBuildCount");
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 8: Ctrl+100 SC/LV builds in SpaceCraftConstructionWindow.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "OnClickAccept")]
-    public static class Patch_SpaceCraftConstructionWindow_BuildCount
-    {
-        public static int GetBuildCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_SpaceCraftConstructionWindow_BuildCount), nameof(GetBuildCount), "SpaceCraftConstructionWindow.OnClickAccept");
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on ACCEPT button in SpaceCraftConstructionWindow.
-    // Added dynamically in Awake so the localized text is always current.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "Awake")]
-    public static class Patch_SpaceCraftConstructionWindow_Awake
-    {
-        static void Postfix(SpaceCraftConstructionWindow __instance)
-        {
-            try
+            static bool Prefix(TextIntUpDown __instance)
             {
-                var btnAccept = Traverse.Create(__instance).Field("btnAccept")
-                    .GetValue<UnityEngine.UI.Button>();
-                if (btnAccept == null) return;
-
-                var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
-                    ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl");
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftConstructionWindow_Awake: " + ex);
-            }
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on ACCEPT button in ChoseFacilityWindow (facilities & modules build).
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(ChoseFacilityWindow), "Awake")]
-    public static class Patch_ChoseFacilityWindow_Awake
-    {
-        static void Postfix(ChoseFacilityWindow __instance)
-        {
-            try
-            {
-                var btnAccept = Traverse.Create(__instance).Field("btnAccept")
-                    .GetValue<UnityEngine.UI.Button>();
-                if (btnAccept == null) return;
-
-                var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
-                    ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl");
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_ChoseFacilityWindow_Awake: " + ex);
-            }
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 9: Shift+Click on "Cancel Building" cancels ALL facilities
-    //            under construction on the same body.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(FacilityInfoWindow), "OnActionButtonClick")]
-    public static class Patch_FacilityInfoWindow_CancelAllBuildings
-    {
-        static bool Prefix(FacilityInfoWindow __instance)
-        {
-            try
-            {
-                Facility currentFacility = Traverse.Create(__instance)
-                    .Field("currentFacility").GetValue<Facility>();
-
-                if (currentFacility == null || currentFacility.BuildProgress >= 1f)
-                    return true;
-                if (!Input.GetKey(KeyCode.LeftShift))
-                    return true;
-
-                var current = SerializedMonoBehaviourSingleton<UIManager>.Instance.Current;
-                if (current is PlanMissionWindow pmw && pmw.Open)
-                    return true;
-
-                ObjectInfoData oid = currentFacility.ObjectInfoData;
-                var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
-                foreach (Facility f in toCancel)
-                    f.CancelBuild();
-
-                Traverse.Create(__instance).Field("currentFacility").SetValue(null);
-                SerializedMonoBehaviourSingleton<UIManager>.Instance
-                    .Open(EWindowType.ObjectInfo, oid.ObjectInfo);
+                if (!Input.GetKey(KeyCode.LeftControl)) return true;
+                __instance.INTValue += 100;
                 return false;
             }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_FacilityInfoWindow_CancelAllBuildings: " + ex);
-                return true;
-            }
         }
-    }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on the cancel-build action button in FacilityInfoWindow.
-    // SetupButtons is called each time state changes, so the tooltip is
-    // conditionally applied only when the button is in cancel-build mode.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(FacilityInfoWindow), "SetupButtons")]
-    public static class Patch_FacilityInfoWindow_SetupButtons
-    {
-        static void Postfix(FacilityInfoWindow __instance)
+        [HarmonyPatch(typeof(TextIntUpDown), "DownClick")]
+        public static class Patch_TextIntUpDown_DownClick
         {
-            try
+            static bool Prefix(TextIntUpDown __instance)
             {
-                var traverse = Traverse.Create(__instance);
-                var currentFacility = traverse.Field("currentFacility").GetValue<Facility>();
-                var actionButton = traverse.Field("actionButton")
-                    .GetValue<UnityEngine.UI.Button>();
-                if (actionButton == null) return;
-
-                var tt = actionButton.gameObject.GetComponent<ShowToolTip>()
-                    ?? actionButton.gameObject.AddComponent<ShowToolTip>();
-
-                bool inCancelBuildMode =
-                    currentFacility != null
-                    && currentFacility.BuildProgress < 1f
-                    && currentFacility.Company == MonoBehaviourSingleton<GameManager>.Instance.Player;
-
-                tt.CustomTextFromCodeRefreshText2 = inCancelBuildMode
-                    ? (Func<string>)(() => LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"))
-                    : null;
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_FacilityInfoWindow_SetupButtons: " + ex);
-            }
-        }
-    }
-
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Feature 9b: Shift+Click on the X button (upper-right corner of a
-    // facility icon in the Object Info list) cancels ALL facilities under
-    // construction on that body.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(UIFacilityList), "CancelBuilding")]
-    public static class Patch_UIFacilityList_CancelAllBuildings
-    {
-        static bool Prefix(UIFacilityList __instance, UIRowFacility element)
-        {
-            if (!Input.GetKey(KeyCode.LeftShift)) return true;
-            try
-            {
-                Facility facility = element?.Facility;
-                if (facility == null || facility.BuildProgress >= 1f) return true;
-
-                ObjectInfoData oid = facility.ObjectInfoData;
-                var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
-                foreach (Facility f in toCancel)
-                    f.CancelBuild();
-
-                // Refresh the existing ObjectInfoWindow in place (don't reopen)
-                var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
-                    .GetWindow<ObjectInfoWindow>();
-                if (window != null && window.Open)
-                    window.SetData(oid.ObjectInfo);
+                if (!Input.GetKey(KeyCode.LeftControl)) return true;
+                __instance.INTValue -= 100;
                 return false;
             }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_UIFacilityList_CancelAllBuildings: " + ex);
-                return true;
-            }
         }
-    }
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on the facility icon X button.
-    // ─────────────────────────────────────────────────────────────────────────
-    [HarmonyPatch(typeof(UIFacilityList), "SetData")]
-    public static class Patch_UIFacilityList_SetData_Tooltip
-    {
-        static void Postfix(UIFacilityList __instance)
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 5 & 6: Ctrl+100 in CountToAdd (SC/LV selection +/-).
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(CountToAdd), "OnClickAdd")]
+        public static class Patch_CountToAdd_OnClickAdd
         {
-            try
+            public static int GetAddCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+                => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_CountToAdd_OnClickAdd), nameof(GetAddCount), "CountToAdd.OnClickAdd");
+        }
+
+        [HarmonyPatch(typeof(CountToAdd), "OnClickRemove")]
+        public static class Patch_CountToAdd_OnClickRemove
+        {
+            public static int GetAddCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+                => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_CountToAdd_OnClickRemove), nameof(GetAddCount), "CountToAdd.OnClickRemove");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 5b: Ctrl+100 for module-cargo + button (ResourcesList).
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
+        public static class Patch_ResourcesList_OnClickMultiAdd
+        {
+            public static int GetAddCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+                => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_ResourcesList_OnClickMultiAdd), nameof(GetAddCount), "ResourcesList.OnClickMultiAdd");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Tooltip hint on CountToAdd +/- buttons: localised Ctrl+Click hint appended
+        // to the existing Shift+Click text already shown by the game.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(CountToAdd), "SetData",
+            new Type[] { typeof(int), typeof(int), typeof(bool) })]
+        public static class Patch_CountToAdd_SetData
+        {
+            static void Postfix(CountToAdd __instance)
             {
-                string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings");
-                foreach (var row in __instance.CreateRows)
-                {
-                    var btn = row.ButtonCancel;
-                    if (btn == null) continue;
-                    var existing = btn.gameObject.GetComponents<ShowToolTip>();
-                    foreach (var st in existing)
-                        UnityEngine.Object.Destroy(st);
-                    var tt = btn.gameObject.AddComponent<ShowToolTip>();
-                    tt.CustomTextFromCode = tip;
-                    tt.CustomTextFromCodeRefreshText2 = () => tip;
-                }
+                SetCtrlHint(__instance.addTooltip2);
+                SetCtrlHint(__instance.removeToolTip2);
             }
-            catch (Exception ex)
+
+            private static void SetCtrlHint(ShowToolTip tt)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_UIFacilityList_SetData_Tooltip: " + ex);
+                if (tt == null) return;
+                string baseText = tt.CustomTextFromCode;
+                if (string.IsNullOrEmpty(baseText)) return;
+                tt.CustomTextFromCodeRefreshText2 = () =>
+                    baseText + "\n<color=grey>" + LEManager.Get("SimpleTweaks.Tooltip.CtrlHint") + "</color>";
             }
         }
 
-        // Feature 9c: Shift+Click on the X (cross) button in a Spacecraft or
-        // Launch Vehicle construction queue row cancels the ENTIRE construction
-        // queue for that body.
         // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(UIRowRocket), "OnCancelBuildClick")]
-        public static class Patch_UIRowRocket_CancelAllConstruction
+        // Feature 7: Ctrl+100 facility builds in ObjectInfoWindow.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(ObjectInfoWindow), "FacilityListOnOnClickCreateFacility")]
+        public static class Patch_ObjectInfoWindow_FacilityBuildCount
         {
-            static bool Prefix(UIRowRocket __instance)
+            public static int GetBuildCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+                => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_ObjectInfoWindow_FacilityBuildCount), nameof(GetBuildCount), "ObjectInfoWindow.FacilityBuildCount");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 8: Ctrl+100 SC/LV builds in SpaceCraftConstructionWindow.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "OnClickAccept")]
+        public static class Patch_SpaceCraftConstructionWindow_BuildCount
+        {
+            public static int GetBuildCount() => Input.GetKey(KeyCode.LeftControl) ? 100 : 10;
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+                => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(Patch_SpaceCraftConstructionWindow_BuildCount), nameof(GetBuildCount), "SpaceCraftConstructionWindow.OnClickAccept");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Tooltip on ACCEPT button in SpaceCraftConstructionWindow.
+        // Added dynamically in Awake so the localized text is always current.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "Awake")]
+        public static class Patch_SpaceCraftConstructionWindow_Awake
+        {
+            static void Postfix(SpaceCraftConstructionWindow __instance)
             {
-                if (!Input.GetKey(KeyCode.LeftShift)) return true;
                 try
                 {
-                    var rcd = __instance.CurrentRowRocketData?.rConstruct;
-                    if (rcd == null || rcd.BuildProgress >= 1f) return true;
-
-                    var oid = rcd.ObjectInfoData;
-                    var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
-                        .GetWindow<ObjectInfoWindow>();
-                    var currentOI = window?.ObjectInfoCurrent;
-
-                    var constructions = oid.GetListRocketConstruct()
-                        .Where(c => c.BuildProgress < 1f).ToList();
-                    foreach (var c in constructions)
-                        c.CancelBuild();
-
-                    if (window != null && window.Open)
-                        window.SetData(currentOI ?? oid.ObjectInfo);
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_UIRowRocket_CancelAllConstruction: " + ex);
-                    return true;
-                }
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────────
-        // ─────────────────────────────────────────────────────────────────────────
-        // Tooltip on the SC/LC construction queue X button.
-        // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(UIRowRocket), "Awake")]
-        public static class Patch_UIRowRocket_Awake_Tooltip
-        {
-            static void Postfix(UIRowRocket __instance)
-            {
-                try
-                {
-                    var btn = Traverse.Create(__instance)
-                        .Field("buttonCancelConstruction")
+                    var btnAccept = Traverse.Create(__instance).Field("btnAccept")
                         .GetValue<UnityEngine.UI.Button>();
-                    if (btn == null) return;
-                    string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
-                    var tt = btn.gameObject.GetComponent<ShowToolTip>()
-                        ?? btn.gameObject.AddComponent<ShowToolTip>();
-                    tt.CustomTextFromCode = tip;
-                    tt.CustomTextFromCodeRefreshText2 = () => tip;
+                    if (btnAccept == null) return;
+
+                    var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
+                        ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
+                    tt.CustomTextFromCodeRefreshText2 =
+                        () => LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl");
                 }
                 catch (Exception ex)
                 {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_UIRowRocket_Awake_Tooltip: " + ex);
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftConstructionWindow_Awake: " + ex);
                 }
             }
         }
 
         // ─────────────────────────────────────────────────────────────────────────
-        // Feature 9d: Shift+Click on the CANCEL BUILDING button in the Spacecraft
-        // / Launch Vehicle info window cancels ALL constructions of that type
-        // (spacecraft or launch vehicles) on the body.
+        // Tooltip on ACCEPT button in ChoseFacilityWindow (facilities & modules build).
         // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(SpaceCraftInfoWindow), "OnCancelBuildButtonClick")]
-        public static class Patch_SpaceCraftInfoWindow_CancelAllConstruction
+        [HarmonyPatch(typeof(ChoseFacilityWindow), "Awake")]
+        public static class Patch_ChoseFacilityWindow_Awake
         {
-            static bool Prefix(SpaceCraftInfoWindow __instance)
-            {
-                if (!Input.GetKey(KeyCode.LeftShift)) return true;
-                try
-                {
-                    var rcd = Traverse.Create(__instance).Field("rowRocketData")
-                        .GetValue<RowRocketData>()?.rConstruct;
-                    if (rcd == null || rcd.BuildProgress >= 1f) return true;
-
-                    var oid = rcd.ObjectInfoData;
-                    bool isSC = rcd.SpacecraftType != null;
-                    var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
-                        .GetWindow<ObjectInfoWindow>();
-                    var currentOI = window?.ObjectInfoCurrent;
-
-                    var constructions = oid.GetListRocketConstruct()
-                        .Where(c => c.BuildProgress < 1f)
-                        .Where(c => isSC ? c.SpacecraftType != null : c.LaunchVehicleType != null)
-                        .ToList();
-                    foreach (var c in constructions)
-                        c.CancelBuild();
-
-                    __instance.HideImmediately();
-                    if (window != null && window.Open)
-                        window.SetData(currentOI ?? oid.ObjectInfo);
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftInfoWindow_CancelAllConstruction: " + ex);
-                    return true;
-                }
-            }
-        }
-        // Tooltip on the CANCEL BUILDING button in SpacecraftInfoWindow.
-        // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(SpaceCraftInfoWindow), "Awake")]
-        public static class Patch_SpaceCraftInfoWindow_Awake_Tooltip
-        {
-            static void Postfix(SpaceCraftInfoWindow __instance)
+            static void Postfix(ChoseFacilityWindow __instance)
             {
                 try
                 {
-                    var btn = Traverse.Create(__instance)
-                        .Field("cancelBuildButton")
+                    var btnAccept = Traverse.Create(__instance).Field("btnAccept")
                         .GetValue<UnityEngine.UI.Button>();
-                    if (btn == null) return;
-                    string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
-                    var tt = btn.gameObject.GetComponent<ShowToolTip>()
-                        ?? btn.gameObject.AddComponent<ShowToolTip>();
-                    tt.CustomTextFromCode = tip;
-                    tt.CustomTextFromCodeRefreshText2 = () => tip;
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftInfoWindow_Awake_Tooltip: " + ex);
-                }
-            }
-        }
+                    if (btnAccept == null) return;
 
-        // ─────────────────────────────────────────────────────────────────────────
-        // Tooltip on the addMulti (+) button for module cargo rows.
-        // RefreshAddMulti() is called after SetData and whenever availability changes.
-        // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(ResorceRow), nameof(ResorceRow.RefreshAddMulti))]
-        public static class Patch_ResorceRow_RefreshAddMulti
-        {
-            private static readonly FieldInfo AddMultiField =
-                typeof(ResorceRow).GetField("addMulti", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            static void Postfix(ResorceRow __instance)
-            {
-                try
-                {
-                    var addMulti = AddMultiField?.GetValue(__instance) as UnityEngine.UI.Button;
-                    if (addMulti == null || !addMulti.gameObject.activeSelf) return;
-
-                    var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
-                        ?? addMulti.gameObject.AddComponent<ShowToolTip>();
+                    var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
+                        ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
                     tt.CustomTextFromCodeRefreshText2 =
-                        () => LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl");
+                        () => LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl");
                 }
                 catch (Exception ex)
                 {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_RefreshAddMulti: " + ex);
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_ChoseFacilityWindow_Awake: " + ex);
                 }
             }
         }
 
         // ─────────────────────────────────────────────────────────────────────────
-        // Tooltip on the delete (−) button for module cargo rows, and
-        // Shift+Click / Ctrl+Click support to remove 10 / 100 rows at once.
+        // Feature 9: Shift+Click on "Cancel Building" cancels ALL facilities
+        //            under construction on the same body.
         // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(ResorceRow), "SetData",
-            new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
-        public static class Patch_ResorceRow_SetData
+        [HarmonyPatch(typeof(FacilityInfoWindow), "OnActionButtonClick")]
+        public static class Patch_FacilityInfoWindow_CancelAllBuildings
         {
-            private static readonly FieldInfo ButonDeleteField =
-                typeof(ResorceRow).GetField("butonDelete", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            static void Postfix(ResorceRow __instance)
+            static bool Prefix(FacilityInfoWindow __instance)
             {
                 try
                 {
-                    if (__instance.CargoResourceTypeType() != EResourceTypeType.modules) return;
+                    Facility currentFacility = Traverse.Create(__instance)
+                        .Field("currentFacility").GetValue<Facility>();
 
-                    var butonDelete = ButonDeleteField?.GetValue(__instance) as UnityEngine.UI.Button;
-                    if (butonDelete == null) return;
-
-                    var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
-                        ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
-                    tt.CustomTextFromCodeRefreshText2 =
-                        () => LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl");
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_SetData: " + ex);
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(ResorceRow), "OnButtonClickDelete")]
-        public static class Patch_ResorceRow_OnButtonClickDelete_Multi
-        {
-            private static bool _inMultiDelete = false;
-
-            static bool Prefix(ResorceRow __instance)
-            {
-                if (_inMultiDelete) return true;
-                if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.LeftControl))
-                    return true;
-
-                try
-                {
-                    if (__instance.CargoResourceTypeType() != EResourceTypeType.modules)
+                    if (currentFacility == null || currentFacility.BuildProgress >= 1f)
                         return true;
+                    if (!Input.GetKey(KeyCode.LeftShift))
+                        return true;
+
+                    var current = SerializedMonoBehaviourSingleton<UIManager>.Instance.Current;
+                    if (current is PlanMissionWindow pmw && pmw.Open)
+                        return true;
+
+                    ObjectInfoData oid = currentFacility.ObjectInfoData;
+                    var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
+                    foreach (Facility f in toCancel)
+                        f.CancelBuild();
+
+                    Traverse.Create(__instance).Field("currentFacility").SetValue(null);
+                    SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .Open(EWindowType.ObjectInfo, oid.ObjectInfo);
+                    return false;
                 }
-                catch { return true; }
-
-                SpaceModuleDescriptor ft = __instance.FacilityType();
-                if (ft == null) return true;
-
-                var rList = Traverse.Create(__instance).Field("resourcesListParent")
-                    .GetValue<ResourcesList>();
-                if (rList == null) return true;
-
-                // count-1 additional deletes (the original delete handles __instance itself)
-                int extra = (Input.GetKey(KeyCode.LeftControl) ? 100 : 10) - 1;
-
-                _inMultiDelete = true;
-                try
+                catch (Exception ex)
                 {
-                    for (int i = 0; i < extra; i++)
-                    {
-                        // Re-query each iteration: the list shrinks as rows are deleted
-                        ResorceRow next = null;
-                        foreach (var r in rList.listResorces)
-                        {
-                            if (r == __instance) continue;
-                            SpaceModuleDescriptor rft = null;
-                            try { rft = r.FacilityType(); } catch { continue; }
-                            if (rft == ft) { next = r; break; }
-                        }
-                        if (next == null) break;
-                        next.OnButtonClickDeletePublic();
-                    }
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_FacilityInfoWindow_CancelAllBuildings: " + ex);
+                    return true;
                 }
-                finally
-                {
-                    _inMultiDelete = false;
-                }
-
-                return true; // let original handle __instance
             }
         }
 
         // ─────────────────────────────────────────────────────────────────────────
-        // Feature 10: Plan Mission — "↑ ORBIT / ↓ SURFACE" quick-destination button.
-        //
-        // When origin is a surface body (planet, moon, asteroid …) the button reads
-        // "↑ ORBIT" and sets the destination to that body's low orbit.
-        // When origin is an orbit it reads "↓ SURFACE" and sets the destination to
-        // the parent body.  The button is hidden whenever no applicable counterpart
-        // exists (e.g. unknown origin or a body with no associated orbit).
-        //
-        // The button is added as a child of the destination ObjectSearchInputField,
-        // anchored to its right edge so it sits just outside the input box.
+        // Tooltip on the cancel-build action button in FacilityInfoWindow.
+        // SetupButtons is called each time state changes, so the tooltip is
+        // conditionally applied only when the button is in cancel-build mode.
         // ─────────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(PMTabDestination), "Awake")]
-        public static class Patch_PMTabDestination_DestShortcut
+        [HarmonyPatch(typeof(FacilityInfoWindow), "SetupButtons")]
+        public static class Patch_FacilityInfoWindow_SetupButtons
         {
-            private static readonly FieldInfo DestInputField =
-                typeof(PMTabDestination).GetField("destinationInput",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-            private static readonly FieldInfo StartInputField =
-                typeof(PMTabDestination).GetField("startInput",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-            private static readonly FieldInfo SearchBtnOnInput =
-                typeof(ObjectSearchInputField).GetField("searchButton",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-
-            // instance → (button, label) – used by the refresh patches below
-            internal static readonly Dictionary<PMTabDestination, (UnityEngine.UI.Button btn, TextMeshProUGUI lbl)> Registry =
-                new Dictionary<PMTabDestination, (UnityEngine.UI.Button, TextMeshProUGUI)>();
-
-            private const float BtnWidth = 22f;
-            private const float BtnInset = 2f;
-
-            static void Postfix(PMTabDestination __instance)
+            static void Postfix(FacilityInfoWindow __instance)
             {
                 try
                 {
-                    var destInput = DestInputField?.GetValue(__instance) as ObjectSearchInputField;
-                    var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
-                    if (destInput == null || startInput == null) return;
-                    var searchBtn = SearchBtnOnInput?.GetValue(destInput) as UnityEngine.UI.Button;
+                    var traverse = Traverse.Create(__instance);
+                    var currentFacility = traverse.Field("currentFacility").GetValue<Facility>();
+                    var actionButton = traverse.Field("actionButton")
+                        .GetValue<UnityEngine.UI.Button>();
+                    if (actionButton == null) return;
 
-                    // ── build button game object ───────────────────────────────
-                    var btnGo = new GameObject("ST_DestShortcut");
-                    // Parent to the destination input; the button's rect extends
-                    // outside the input's bounds to the right (no masking at root).
-                    btnGo.transform.SetParent(destInput.transform, false);
-                    btnGo.transform.SetAsLastSibling();
+                    var tt = actionButton.gameObject.GetComponent<ShowToolTip>()
+                        ?? actionButton.gameObject.AddComponent<ShowToolTip>();
 
-                    // Background – copy style from the ⇄ switch button
-                    var img = btnGo.AddComponent<UnityEngine.UI.Image>();
-                    var srcImg = searchBtn?.GetComponent<UnityEngine.UI.Image>();
-                    if (srcImg != null)
+                    bool inCancelBuildMode =
+                        currentFacility != null
+                        && currentFacility.BuildProgress < 1f
+                        && currentFacility.Company == MonoBehaviourSingleton<GameManager>.Instance.Player;
+
+                    tt.CustomTextFromCodeRefreshText2 = inCancelBuildMode
+                        ? (Func<string>)(() => LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"))
+                        : null;
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_FacilityInfoWindow_SetupButtons: " + ex);
+                }
+            }
+        }
+
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Feature 9b: Shift+Click on the X button (upper-right corner of a
+        // facility icon in the Object Info list) cancels ALL facilities under
+        // construction on that body.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(UIFacilityList), "CancelBuilding")]
+        public static class Patch_UIFacilityList_CancelAllBuildings
+        {
+            static bool Prefix(UIFacilityList __instance, UIRowFacility element)
+            {
+                if (!Input.GetKey(KeyCode.LeftShift)) return true;
+                try
+                {
+                    Facility facility = element?.Facility;
+                    if (facility == null || facility.BuildProgress >= 1f) return true;
+
+                    ObjectInfoData oid = facility.ObjectInfoData;
+                    var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
+                    foreach (Facility f in toCancel)
+                        f.CancelBuild();
+
+                    // Refresh the existing ObjectInfoWindow in place (don't reopen)
+                    var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .GetWindow<ObjectInfoWindow>();
+                    if (window != null && window.Open)
+                        window.SetData(oid.ObjectInfo);
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_UIFacilityList_CancelAllBuildings: " + ex);
+                    return true;
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+        // Tooltip on the facility icon X button.
+        // ─────────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(UIFacilityList), "SetData")]
+        public static class Patch_UIFacilityList_SetData_Tooltip
+        {
+            static void Postfix(UIFacilityList __instance)
+            {
+                try
+                {
+                    string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings");
+                    foreach (var row in __instance.CreateRows)
                     {
-                        img.sprite = srcImg.sprite;
-                        img.color = srcImg.color;
-                        img.type = srcImg.type;
-                        img.material = srcImg.material;
+                        var btn = row.ButtonCancel;
+                        if (btn == null) continue;
+                        var existing = btn.gameObject.GetComponents<ShowToolTip>();
+                        foreach (var st in existing)
+                            UnityEngine.Object.Destroy(st);
+                        var tt = btn.gameObject.AddComponent<ShowToolTip>();
+                        tt.CustomTextFromCode = tip;
+                        tt.CustomTextFromCodeRefreshText2 = () => tip;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] Patch_UIFacilityList_SetData_Tooltip: " + ex);
+                }
+            }
+
+            // Feature 9c: Shift+Click on the X (cross) button in a Spacecraft or
+            // Launch Vehicle construction queue row cancels the ENTIRE construction
+            // queue for that body.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(UIRowRocket), "OnCancelBuildClick")]
+            public static class Patch_UIRowRocket_CancelAllConstruction
+            {
+                static bool Prefix(UIRowRocket __instance)
+                {
+                    if (!Input.GetKey(KeyCode.LeftShift)) return true;
+                    try
+                    {
+                        var rcd = __instance.CurrentRowRocketData?.rConstruct;
+                        if (rcd == null || rcd.BuildProgress >= 1f) return true;
+
+                        var oid = rcd.ObjectInfoData;
+                        var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                            .GetWindow<ObjectInfoWindow>();
+                        var currentOI = window?.ObjectInfoCurrent;
+
+                        var constructions = oid.GetListRocketConstruct()
+                            .Where(c => c.BuildProgress < 1f).ToList();
+                        foreach (var c in constructions)
+                            c.CancelBuild();
+
+                        if (window != null && window.Open)
+                            window.SetData(currentOI ?? oid.ObjectInfo);
+                        return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_UIRowRocket_CancelAllConstruction: " + ex);
+                        return true;
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────
+            // ─────────────────────────────────────────────────────────────────────────
+            // Tooltip on the SC/LC construction queue X button.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(UIRowRocket), "Awake")]
+            public static class Patch_UIRowRocket_Awake_Tooltip
+            {
+                static void Postfix(UIRowRocket __instance)
+                {
+                    try
+                    {
+                        var btn = Traverse.Create(__instance)
+                            .Field("buttonCancelConstruction")
+                            .GetValue<UnityEngine.UI.Button>();
+                        if (btn == null) return;
+                        string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
+                        var tt = btn.gameObject.GetComponent<ShowToolTip>()
+                            ?? btn.gameObject.AddComponent<ShowToolTip>();
+                        tt.CustomTextFromCode = tip;
+                        tt.CustomTextFromCodeRefreshText2 = () => tip;
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_UIRowRocket_Awake_Tooltip: " + ex);
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────
+            // Feature 9d: Shift+Click on the CANCEL BUILDING button in the Spacecraft
+            // / Launch Vehicle info window cancels ALL constructions of that type
+            // (spacecraft or launch vehicles) on the body.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(SpaceCraftInfoWindow), "OnCancelBuildButtonClick")]
+            public static class Patch_SpaceCraftInfoWindow_CancelAllConstruction
+            {
+                static bool Prefix(SpaceCraftInfoWindow __instance)
+                {
+                    if (!Input.GetKey(KeyCode.LeftShift)) return true;
+                    try
+                    {
+                        var rcd = Traverse.Create(__instance).Field("rowRocketData")
+                            .GetValue<RowRocketData>()?.rConstruct;
+                        if (rcd == null || rcd.BuildProgress >= 1f) return true;
+
+                        var oid = rcd.ObjectInfoData;
+                        bool isSC = rcd.SpacecraftType != null;
+                        var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                            .GetWindow<ObjectInfoWindow>();
+                        var currentOI = window?.ObjectInfoCurrent;
+
+                        var constructions = oid.GetListRocketConstruct()
+                            .Where(c => c.BuildProgress < 1f)
+                            .Where(c => isSC ? c.SpacecraftType != null : c.LaunchVehicleType != null)
+                            .ToList();
+                        foreach (var c in constructions)
+                            c.CancelBuild();
+
+                        __instance.HideImmediately();
+                        if (window != null && window.Open)
+                            window.SetData(currentOI ?? oid.ObjectInfo);
+                        return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftInfoWindow_CancelAllConstruction: " + ex);
+                        return true;
+                    }
+                }
+            }
+            // Tooltip on the CANCEL BUILDING button in SpacecraftInfoWindow.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(SpaceCraftInfoWindow), "Awake")]
+            public static class Patch_SpaceCraftInfoWindow_Awake_Tooltip
+            {
+                static void Postfix(SpaceCraftInfoWindow __instance)
+                {
+                    try
+                    {
+                        var btn = Traverse.Create(__instance)
+                            .Field("cancelBuildButton")
+                            .GetValue<UnityEngine.UI.Button>();
+                        if (btn == null) return;
+                        string tip = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
+                        var tt = btn.gameObject.GetComponent<ShowToolTip>()
+                            ?? btn.gameObject.AddComponent<ShowToolTip>();
+                        tt.CustomTextFromCode = tip;
+                        tt.CustomTextFromCodeRefreshText2 = () => tip;
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_SpaceCraftInfoWindow_Awake_Tooltip: " + ex);
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────
+            // Tooltip on the addMulti (+) button for module cargo rows.
+            // RefreshAddMulti() is called after SetData and whenever availability changes.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(ResorceRow), nameof(ResorceRow.RefreshAddMulti))]
+            public static class Patch_ResorceRow_RefreshAddMulti
+            {
+                private static readonly FieldInfo AddMultiField =
+                    typeof(ResorceRow).GetField("addMulti", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                static void Postfix(ResorceRow __instance)
+                {
+                    try
+                    {
+                        var addMulti = AddMultiField?.GetValue(__instance) as UnityEngine.UI.Button;
+                        if (addMulti == null || !addMulti.gameObject.activeSelf) return;
+
+                        var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
+                            ?? addMulti.gameObject.AddComponent<ShowToolTip>();
+                        tt.CustomTextFromCodeRefreshText2 =
+                            () => LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl");
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_RefreshAddMulti: " + ex);
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────
+            // Tooltip on the delete (−) button for module cargo rows, and
+            // Shift+Click / Ctrl+Click support to remove 10 / 100 rows at once.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(ResorceRow), "SetData",
+                new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
+            public static class Patch_ResorceRow_SetData
+            {
+                private static readonly FieldInfo ButonDeleteField =
+                    typeof(ResorceRow).GetField("butonDelete", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                static void Postfix(ResorceRow __instance)
+                {
+                    try
+                    {
+                        if (__instance.CargoResourceTypeType() != EResourceTypeType.modules) return;
+
+                        var butonDelete = ButonDeleteField?.GetValue(__instance) as UnityEngine.UI.Button;
+                        if (butonDelete == null) return;
+
+                        var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
+                            ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
+                        tt.CustomTextFromCodeRefreshText2 =
+                            () => LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl");
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_SetData: " + ex);
+                    }
+                }
+            }
+
+            [HarmonyPatch(typeof(ResorceRow), "OnButtonClickDelete")]
+            public static class Patch_ResorceRow_OnButtonClickDelete_Multi
+            {
+                private static bool _inMultiDelete = false;
+
+                static bool Prefix(ResorceRow __instance)
+                {
+                    if (_inMultiDelete) return true;
+                    if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.LeftControl))
+                        return true;
+
+                    try
+                    {
+                        if (__instance.CargoResourceTypeType() != EResourceTypeType.modules)
+                            return true;
+                    }
+                    catch { return true; }
+
+                    SpaceModuleDescriptor ft = __instance.FacilityType();
+                    if (ft == null) return true;
+
+                    var rList = Traverse.Create(__instance).Field("resourcesListParent")
+                        .GetValue<ResourcesList>();
+                    if (rList == null) return true;
+
+                    // count-1 additional deletes (the original delete handles __instance itself)
+                    int extra = (Input.GetKey(KeyCode.LeftControl) ? 100 : 10) - 1;
+
+                    _inMultiDelete = true;
+                    try
+                    {
+                        for (int i = 0; i < extra; i++)
+                        {
+                            // Re-query each iteration: the list shrinks as rows are deleted
+                            ResorceRow next = null;
+                            foreach (var r in rList.listResorces)
+                            {
+                                if (r == __instance) continue;
+                                SpaceModuleDescriptor rft = null;
+                                try { rft = r.FacilityType(); } catch { continue; }
+                                if (rft == ft) { next = r; break; }
+                            }
+                            if (next == null) break;
+                            next.OnButtonClickDeletePublic();
+                        }
+                    }
+                    finally
+                    {
+                        _inMultiDelete = false;
                     }
 
-                    var btn = btnGo.AddComponent<UnityEngine.UI.Button>();
-                    if (searchBtn != null) btn.colors = searchBtn.colors;
-                    btn.targetGraphic = img;
+                    return true; // let original handle __instance
+                }
+            }
 
-                    // ── label ─────────────────────────────────────────────────
-                    var lblGo = new GameObject("Lbl");
-                    lblGo.transform.SetParent(btnGo.transform, false);
-                    var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+            // ─────────────────────────────────────────────────────────────────────────
+            // Feature 10: Plan Mission — "↑ ORBIT / ↓ SURFACE" quick-destination button.
+            //
+            // When origin is a surface body (planet, moon, asteroid …) the button reads
+            // "↑ ORBIT" and sets the destination to that body's low orbit.
+            // When origin is an orbit it reads "↓ SURFACE" and sets the destination to
+            // the parent body.  The button is hidden whenever no applicable counterpart
+            // exists (e.g. unknown origin or a body with no associated orbit).
+            //
+            // The button is added as a child of the destination ObjectSearchInputField,
+            // anchored to its right edge so it sits just outside the input box.
+            // ─────────────────────────────────────────────────────────────────────────
+            [HarmonyPatch(typeof(PMTabDestination), "Awake")]
+            public static class Patch_PMTabDestination_DestShortcut
+            {
+                private static readonly FieldInfo DestInputField =
+                    typeof(PMTabDestination).GetField("destinationInput",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo StartInputField =
+                    typeof(PMTabDestination).GetField("startInput",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo SearchBtnOnInput =
+                    typeof(ObjectSearchInputField).GetField("searchButton",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
 
-                    // Borrow font from the destination input's own TMP text
-                    var refTmp = destInput.GetComponentInChildren<TextMeshProUGUI>();
-                    if (refTmp != null)
+                // instance → (button, label) – used by the refresh patches below
+                internal static readonly Dictionary<PMTabDestination, (UnityEngine.UI.Button btn, TextMeshProUGUI lbl)> Registry =
+                    new Dictionary<PMTabDestination, (UnityEngine.UI.Button, TextMeshProUGUI)>();
+
+                private const float BtnWidth = 22f;
+                private const float BtnInset = 2f;
+
+                static void Postfix(PMTabDestination __instance)
+                {
+                    try
                     {
-                        lbl.font = refTmp.font;
-                        lbl.fontSharedMaterial = refTmp.fontSharedMaterial;
-                    }
-                    lbl.fontSize = 14f;
-                    lbl.alignment = TextAlignmentOptions.Center;
-                    lbl.color = Color.white;
-                    lbl.enableWordWrapping = false;
+                        var destInput = DestInputField?.GetValue(__instance) as ObjectSearchInputField;
+                        var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
+                        if (destInput == null || startInput == null) return;
+                        var searchBtn = SearchBtnOnInput?.GetValue(destInput) as UnityEngine.UI.Button;
 
-                    var lblRT = lblGo.GetComponent<RectTransform>();
-                    lblRT.anchorMin = Vector2.zero;
-                    lblRT.anchorMax = Vector2.one;
-                    lblRT.offsetMin = Vector2.zero;
-                    lblRT.offsetMax = Vector2.zero;
+                        // ── build button game object ───────────────────────────────
+                        var btnGo = new GameObject("ST_DestShortcut");
+                        // Parent to the destination input; the button's rect extends
+                        // outside the input's bounds to the right (no masking at root).
+                        btnGo.transform.SetParent(destInput.transform, false);
+                        btnGo.transform.SetAsLastSibling();
 
-                    // ── position: inside destInput, flush on the right ─────────
-                    var btnRT = btnGo.GetComponent<RectTransform>();
-                    btnRT.anchorMin = new Vector2(1f, 0f);
-                    btnRT.anchorMax = new Vector2(1f, 1f);
-                    btnRT.pivot = new Vector2(1f, 0.5f);
-                    btnRT.offsetMin = new Vector2(-(BtnWidth + BtnInset), BtnInset);
-                    btnRT.offsetMax = new Vector2(-BtnInset, -BtnInset);
+                        // Background – copy style from the ⇄ switch button
+                        var img = btnGo.AddComponent<UnityEngine.UI.Image>();
+                        var srcImg = searchBtn?.GetComponent<UnityEngine.UI.Image>();
+                        if (srcImg != null)
+                        {
+                            img.sprite = srcImg.sprite;
+                            img.color = srcImg.color;
+                            img.type = srcImg.type;
+                            img.material = srcImg.material;
+                        }
 
-                    // ── tooltip ───────────────────────────────────────────────
-                    var tt = btnGo.AddComponent<ShowToolTip>();
-                    var startRef = startInput;
-                    tt.CustomTextFromCodeRefreshText2 = () =>
-                    {
-                        var orig = startRef.ObjectInfo;
-                        if (orig == null) return string.Empty;
-                        bool fromOrbit = orig.objectTypes == EObjectTypes.Orbit
-                                      || orig.objectTypes == EObjectTypes.SolarOrbit;
-                        return LEManager.Get(fromOrbit
-                            ? "SimpleTweaks.Tooltip.GoToSurface"
-                            : "SimpleTweaks.Tooltip.GoToOrbit");
-                    };
+                        var btn = btnGo.AddComponent<UnityEngine.UI.Button>();
+                        if (searchBtn != null) btn.colors = searchBtn.colors;
+                        btn.targetGraphic = img;
 
-                    // ── click ─────────────────────────────────────────────────
-                    var destRef = destInput;
-                    btn.onClick.AddListener(() =>
-                    {
-                        try
+                        // ── label ─────────────────────────────────────────────────
+                        var lblGo = new GameObject("Lbl");
+                        lblGo.transform.SetParent(btnGo.transform, false);
+                        var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+
+                        // Borrow font from the destination input's own TMP text
+                        var refTmp = destInput.GetComponentInChildren<TextMeshProUGUI>();
+                        if (refTmp != null)
+                        {
+                            lbl.font = refTmp.font;
+                            lbl.fontSharedMaterial = refTmp.fontSharedMaterial;
+                        }
+                        lbl.fontSize = 14f;
+                        lbl.alignment = TextAlignmentOptions.Center;
+                        lbl.color = Color.white;
+                        lbl.enableWordWrapping = false;
+
+                        var lblRT = lblGo.GetComponent<RectTransform>();
+                        lblRT.anchorMin = Vector2.zero;
+                        lblRT.anchorMax = Vector2.one;
+                        lblRT.offsetMin = Vector2.zero;
+                        lblRT.offsetMax = Vector2.zero;
+
+                        // ── position: inside destInput, flush on the right ─────────
+                        var btnRT = btnGo.GetComponent<RectTransform>();
+                        btnRT.anchorMin = new Vector2(1f, 0f);
+                        btnRT.anchorMax = new Vector2(1f, 1f);
+                        btnRT.pivot = new Vector2(1f, 0.5f);
+                        btnRT.offsetMin = new Vector2(-(BtnWidth + BtnInset), BtnInset);
+                        btnRT.offsetMax = new Vector2(-BtnInset, -BtnInset);
+
+                        // ── tooltip ───────────────────────────────────────────────
+                        var tt = btnGo.AddComponent<ShowToolTip>();
+                        var startRef = startInput;
+                        tt.CustomTextFromCodeRefreshText2 = () =>
                         {
                             var orig = startRef.ObjectInfo;
-                            if (orig == null) return;
-                            var target = GetCounterpart(orig);
-                            if (target == null) return;
-                            destRef.ObjectInfo = target;
-                            destRef.InvokeOnObjectSelect();
-                        }
-                        catch (Exception ex)
+                            if (orig == null) return string.Empty;
+                            bool fromOrbit = orig.objectTypes == EObjectTypes.Orbit
+                                          || orig.objectTypes == EObjectTypes.SolarOrbit;
+                            return LEManager.Get(fromOrbit
+                                ? "SimpleTweaks.Tooltip.GoToSurface"
+                                : "SimpleTweaks.Tooltip.GoToOrbit");
+                        };
+
+                        // ── click ─────────────────────────────────────────────────
+                        var destRef = destInput;
+                        btn.onClick.AddListener(() =>
                         {
-                            Plugin.Log.LogError("[SimpleTweaks] DestShortcut click: " + ex);
+                            try
+                            {
+                                var orig = startRef.ObjectInfo;
+                                if (orig == null) return;
+                                var target = GetCounterpart(orig);
+                                if (target == null) return;
+                                destRef.ObjectInfo = target;
+                                destRef.InvokeOnObjectSelect();
+                            }
+                            catch (Exception ex)
+                            {
+                                Plugin.Log.LogError("[SimpleTweaks] DestShortcut click: " + ex);
+                            }
+                        });
+
+                        Registry[__instance] = (btn, lbl);
+                        RefreshButton(startInput, btn, lbl);
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_Awake: " + ex);
+                    }
+                }
+
+                // Returns the orbital counterpart of a body, or null if none exists.
+                internal static ObjectInfo GetCounterpart(ObjectInfo origin)
+                {
+                    if (origin == null) return null;
+
+                    // Orbit around a planet/moon → parent body
+                    if (origin.objectTypes == EObjectTypes.Orbit)
+                        return origin.parentObjectInfo;
+
+                    // SolarOrbit (orbit around the Sun) → Sun is not a valid destination
+                    if (origin.objectTypes == EObjectTypes.SolarOrbit)
+                        return null;
+
+                    // Surface → prefer the low-orbit NBody reference on the body
+                    if (origin.LowOrbitCustom != null)
+                    {
+                        var oi = origin.LowOrbitCustom.GetObjectInfo();
+                        if (oi != null) return oi;
+                    }
+
+                    // Fallback: first Orbit-type child (not SolarOrbit)
+                    return origin.listChildren.FirstOrDefault(c =>
+                        c != null && c.objectTypes == EObjectTypes.Orbit);
+                }
+
+                // Show/hide the button and update its label text.
+                internal static void RefreshButton(
+                    ObjectSearchInputField startInput,
+                    UnityEngine.UI.Button btn,
+                    TextMeshProUGUI lbl)
+                {
+                    if (btn == null) return;
+                    var origin = startInput?.ObjectInfo;
+                    var counterpart = GetCounterpart(origin);
+                    btn.gameObject.SetActive(counterpart != null);
+                    if (counterpart == null) return;
+
+                    bool fromOrbit = origin.objectTypes == EObjectTypes.Orbit
+                                  || origin.objectTypes == EObjectTypes.SolarOrbit;
+                    lbl.text = fromOrbit ? "\u2193" : "\u2191";
+                }
+            }
+
+            // Refresh when origin selection changes.
+            [HarmonyPatch(typeof(PMTabDestination), "StartInputOnObjectSelect")]
+            public static class Patch_PMTabDestination_StartInputOnObjectSelect
+            {
+                private static readonly FieldInfo StartInputField =
+                    typeof(PMTabDestination).GetField("startInput",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+
+                static void Postfix(PMTabDestination __instance)
+                {
+                    try
+                    {
+                        if (!Patch_PMTabDestination_DestShortcut.Registry
+                                .TryGetValue(__instance, out var pair)) return;
+                        var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
+                        if (startInput == null) return;
+                        Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_StartInputOnObjectSelect: " + ex);
+                    }
+                }
+            }
+
+            // Refresh when the destination tab is activated (origin pre-filled by the game).
+            [HarmonyPatch(typeof(PMTabDestination), "ActiveTab")]
+            public static class Patch_PMTabDestination_ActiveTab
+            {
+                private static readonly FieldInfo StartInputField =
+                    typeof(PMTabDestination).GetField("startInput",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+
+                static void Postfix(PMTabDestination __instance)
+                {
+                    try
+                    {
+                        if (!Patch_PMTabDestination_DestShortcut.Registry
+                                .TryGetValue(__instance, out var pair)) return;
+                        var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
+                        if (startInput == null) return;
+                        Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_ActiveTab: " + ex);
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────
+            // Feature 11: Mission Planner Cargo — crew slider unlocked on all
+            // crew-module rows (not just the last).
+            //
+            // BlockDropDown normally locks the module dropdown, delete button, + button,
+            // and crew slider on every row except the last.  This patch overrides
+            // BlockDropDown for crew-module rows: it locks the module dropdown, delete
+            // button, and + button as usual, but leaves sliderCrew.interactable
+            // untouched so the crew slider remains editable on all rows.
+            // ─────────────────────────────────────────────────────────────────────────
+
+            // BlockDropDown for crew-module rows: lock the module dropdown,
+            // delete button, and + button as usual, but leave sliderCrew.interactable
+            // untouched so the crew slider remains editable on all rows.
+            [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
+            public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
+            {
+                private static readonly FieldInfo ModuleDropDownField =
+                    typeof(ResorceRow).GetField("moduleDropDown",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo ButonDeleteFieldB =
+                    typeof(ResorceRow).GetField("butonDelete",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo AddMultiFieldB =
+                    typeof(ResorceRow).GetField("addMulti",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+
+                static bool Prefix(ResorceRow __instance)
+                {
+                    if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
+                    try
+                    {
+                        var dd = ModuleDropDownField?.GetValue(__instance) as DropDownEnum;
+                        if (dd?.dropDown != null) dd.dropDown.interactable = false;
+                        var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+                        if (del != null) del.interactable = false;
+                        var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+                        if (am != null) am.gameObject.SetActive(false);
+                        return false; // skip original (which would also lock the crew slider)
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_BlockDropDown_KeepCrewSlider: " + ex);
+                        return true; // fallback: run original
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────
+            // Feature 12: Rich cyclical mission display in Planet/Orbit view.
+            //
+            // In the ObjectInfo "PLANNED MISSIONS" list, replaces the bare-bones
+            // cyclical mission row (just name + button that opens Mission List) with
+            // the full MissionRowCyclicalNew rectangle from the Missions window,
+            // complete with A→B / B→A legs, cargo info, and pause/edit/delete buttons.
+            // ─────────────────────────────────────────────────────────────────────────
+
+            [HarmonyPatch(typeof(UIRowMission), "SetDataRowMissionDataCycleMissionsInfo")]
+            public static class Patch_UIRowMission_CyclicRichDisplay
+            {
+                private static MissionRowCyclicalNew _cachedPrefab;
+                private static bool _prefabLookedUp;
+
+                private static readonly FieldInfo IconField =
+                    typeof(UIRowMission).GetField("icon",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo TitleField =
+                    typeof(UIRowMission).GetField("titleTextMeshPro",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo DescField =
+                    typeof(UIRowMission).GetField("descriptionTextMeshPro",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo DateField =
+                    typeof(UIRowMission).GetField("dateTextMeshPro",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo CountField =
+                    typeof(UIRowMission).GetField("countOnIcon",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo ButtonField =
+                    typeof(UIRowMission).GetField("buttonShowInfoMission",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                private static readonly FieldInfo CycleDataField =
+                    typeof(UIRowMission).GetField("cycleMissionsData",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+
+                private static bool _maxRowsFixed;
+                private static readonly FieldInfo MaxRowsField =
+                    typeof(UIList<UIRowMission, RowMissionData>).GetField("maxRows",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+
+                private static MissionRowCyclicalNew GetPrefab()
+                {
+                    if (_prefabLookedUp) return _cachedPrefab;
+                    _prefabLookedUp = true;
+
+                    try
+                    {
+                        var mw = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                            .GetWindow<MissionsWindow>();
+                        if (mw == null)
+                        {
+                            Plugin.Log.LogWarning("[SimpleTweaks] GetPrefab: MissionsWindow not found");
+                            return null;
                         }
-                    });
 
-                    Registry[__instance] = (btn, lbl);
-                    RefreshButton(startInput, btn, lbl);
+                        var cal = Traverse.Create(mw).Field("cycleMissionAllList")
+                            .GetValue<CycleMissionAllList>();
+                        if (cal == null)
+                        {
+                            Plugin.Log.LogWarning("[SimpleTweaks] GetPrefab: CycleMissionAllList not found");
+                            return null;
+                        }
+
+                        _cachedPrefab = Traverse.Create(cal)
+                            .Field("missionRowCyclicalPrefabNew")
+                            .GetValue<MissionRowCyclicalNew>();
+                        if (_cachedPrefab == null)
+                            Plugin.Log.LogWarning("[SimpleTweaks] GetPrefab: missionRowCyclicalPrefabNew not found");
+                        return _cachedPrefab;
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogWarning(
+                            "[SimpleTweaks] Failed to get MissionRowCyclicalNew prefab: " + ex.Message);
+                        return null;
+                    }
                 }
-                catch (Exception ex)
+
+                static bool Prefix(UIRowMission __instance)
                 {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_Awake: " + ex);
+                    try
+                    {
+                        var cmd = CycleDataField?.GetValue(__instance) as CycleMissionsData;
+                        if (cmd == null)
+                            return true;
+
+                        // Ensure the parent UIMissionsList allows variable-height rows
+                        if (!_maxRowsFixed)
+                        {
+                            _maxRowsFixed = true;
+                            var ml = __instance.GetComponentInParent<UIMissionsList>();
+                            if (ml != null && MaxRowsField != null)
+                            {
+                                MaxRowsField.SetValue(ml, 0);
+                            }
+                        }
+
+                        var prefab = GetPrefab();
+                        if (prefab == null)
+                        {
+                            Plugin.Log.LogWarning("[SimpleTweaks] Prefix: prefab is null, falling back to original");
+                            return true; // fallback to original
+                        }
+
+                        // Hide the vanilla simple UI
+                        (IconField?.GetValue(__instance) as UnityEngine.UI.Image)?.gameObject.SetActive(false);
+                        (TitleField?.GetValue(__instance) as TextMeshProUGUI)?.gameObject.SetActive(false);
+                        (DescField?.GetValue(__instance) as TextMeshProUGUI)?.gameObject.SetActive(false);
+                        (DateField?.GetValue(__instance) as TextMeshProUGUI)?.gameObject.SetActive(false);
+                        (CountField?.GetValue(__instance) as TextMeshProUGUI)?.gameObject.SetActive(false);
+                        (ButtonField?.GetValue(__instance) as UnityEngine.UI.Button)?.gameObject.SetActive(false);
+
+                        // Clean up any previously created rich row
+                        var t = __instance.transform;
+                        for (int i = t.childCount - 1; i >= 0; i--)
+                        {
+                            if (t.GetChild(i).name.StartsWith("ST_CyclicRich"))
+                                UnityEngine.Object.Destroy(t.GetChild(i).gameObject);
+                        }
+
+                        // Create the rich display
+                        var rich = UnityEngine.Object.Instantiate(prefab, t);
+                        rich.name = "ST_CyclicRich";
+                        rich.SetData(cmd);
+
+                        // Recursively fix ALL LayoutElement minWidths and all
+                        // HorizontalLayoutGroup alignments in the rich row hierarchy.
+                        // The prefab has minW=550 on two levels AND center-aligned
+                        // content that creates ~115px of dead space on the left.
+                        FixLayoutRecursive(rich.transform);
+
+                        // Stretch the rich row to fill parent width
+                        var richRT = rich.GetComponent<RectTransform>();
+                        if (richRT != null)
+                        {
+                            richRT.anchorMin = Vector2.zero;
+                            richRT.anchorMax = Vector2.one;
+                            richRT.offsetMin = Vector2.zero;
+                            richRT.offsetMax = Vector2.zero;
+                        }
+
+                        // Let the parent row grow taller
+                        var le = __instance.GetComponent<UnityEngine.UI.LayoutElement>();
+                        if (le == null)
+                            le = __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                        le.preferredHeight = -1f;
+                        le.flexibleHeight = 1f;
+                        le.minWidth = -1f;
+
+                        return false; // skip original
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError(
+                            "[SimpleTweaks] Patch_UIRowMission_CyclicRichDisplay: " + ex);
+                        return true; // fallback to original
+                    }
+                }
+
+                private static void FixLayoutRecursive(Transform t)
+                {
+                    // Clear forced minimum widths on all LayoutElements
+                    var le = t.GetComponent<UnityEngine.UI.LayoutElement>();
+                    if (le != null)
+                    {
+                        le.minWidth = 0;
+                        le.preferredWidth = -1;
+                    }
+
+                    // Force HorizontalLayoutGroup to left-align content
+                    var hlg = t.GetComponent<HorizontalLayoutGroup>();
+                    if (hlg != null)
+                    {
+                        // childAlignment is TextAnchor enum — use reflection to avoid
+                        // needing UnityEngine.TextRenderingModule reference
+                        var prop = typeof(HorizontalLayoutGroup).GetProperty("childAlignment");
+                        if (prop != null)
+                        {
+                            // TextAnchor.UpperLeft = 0
+                            prop.SetValue(hlg, 0);
+                        }
+                    }
+
+                    // Recurse
+                    for (int i = 0; i < t.childCount; i++)
+                        FixLayoutRecursive(t.GetChild(i));
                 }
             }
 
-            // Returns the orbital counterpart of a body, or null if none exists.
-            internal static ObjectInfo GetCounterpart(ObjectInfo origin)
+            // Refresh the planet view's mission list after deleting a cyclical mission
+            // from the rich row (the game only refreshes the MissionsWindow, not OIW).
+            [HarmonyPatch(typeof(MissionRowCyclicalNew), "OnButtonDelete")]
+            public static class Patch_MissionRowCyclicalNew_OnButtonDelete_RefreshOIW
             {
-                if (origin == null) return null;
-
-                // Orbit around a planet/moon → parent body
-                if (origin.objectTypes == EObjectTypes.Orbit)
-                    return origin.parentObjectInfo;
-
-                // SolarOrbit (orbit around the Sun) → Sun is not a valid destination
-                if (origin.objectTypes == EObjectTypes.SolarOrbit)
-                    return null;
-
-                // Surface → prefer the low-orbit NBody reference on the body
-                if (origin.LowOrbitCustom != null)
+                static void Postfix(MissionRowCyclicalNew __instance)
                 {
-                    var oi = origin.LowOrbitCustom.GetObjectInfo();
-                    if (oi != null) return oi;
-                }
-
-                // Fallback: first Orbit-type child (not SolarOrbit)
-                return origin.listChildren.FirstOrDefault(c =>
-                    c != null && c.objectTypes == EObjectTypes.Orbit);
-            }
-
-            // Show/hide the button and update its label text.
-            internal static void RefreshButton(
-                ObjectSearchInputField startInput,
-                UnityEngine.UI.Button btn,
-                TextMeshProUGUI lbl)
-            {
-                if (btn == null) return;
-                var origin = startInput?.ObjectInfo;
-                var counterpart = GetCounterpart(origin);
-                btn.gameObject.SetActive(counterpart != null);
-                if (counterpart == null) return;
-
-                bool fromOrbit = origin.objectTypes == EObjectTypes.Orbit
-                              || origin.objectTypes == EObjectTypes.SolarOrbit;
-                lbl.text = fromOrbit ? "\u2193" : "\u2191";
-            }
-        }
-
-        // Refresh when origin selection changes.
-        [HarmonyPatch(typeof(PMTabDestination), "StartInputOnObjectSelect")]
-        public static class Patch_PMTabDestination_StartInputOnObjectSelect
-        {
-            private static readonly FieldInfo StartInputField =
-                typeof(PMTabDestination).GetField("startInput",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-
-            static void Postfix(PMTabDestination __instance)
-            {
-                try
-                {
-                    if (!Patch_PMTabDestination_DestShortcut.Registry
-                            .TryGetValue(__instance, out var pair)) return;
-                    var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
-                    if (startInput == null) return;
-                    Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_StartInputOnObjectSelect: " + ex);
-                }
-            }
-        }
-
-        // Refresh when the destination tab is activated (origin pre-filled by the game).
-        [HarmonyPatch(typeof(PMTabDestination), "ActiveTab")]
-        public static class Patch_PMTabDestination_ActiveTab
-        {
-            private static readonly FieldInfo StartInputField =
-                typeof(PMTabDestination).GetField("startInput",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-
-            static void Postfix(PMTabDestination __instance)
-            {
-                try
-                {
-                    if (!Patch_PMTabDestination_DestShortcut.Registry
-                            .TryGetValue(__instance, out var pair)) return;
-                    var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
-                    if (startInput == null) return;
-                    Patch_PMTabDestination_DestShortcut.RefreshButton(startInput, pair.btn, pair.lbl);
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_PMTabDestination_ActiveTab: " + ex);
-                }
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────────
-        // Feature 11: Mission Planner Cargo — crew slider unlocked on all
-        // crew-module rows (not just the last).
-        //
-        // BlockDropDown normally locks the module dropdown, delete button, + button,
-        // and crew slider on every row except the last.  This patch overrides
-        // BlockDropDown for crew-module rows: it locks the module dropdown, delete
-        // button, and + button as usual, but leaves sliderCrew.interactable
-        // untouched so the crew slider remains editable on all rows.
-        // ─────────────────────────────────────────────────────────────────────────
-
-        // BlockDropDown for crew-module rows: lock the module dropdown,
-        // delete button, and + button as usual, but leave sliderCrew.interactable
-        // untouched so the crew slider remains editable on all rows.
-        [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
-        public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
-        {
-            private static readonly FieldInfo ModuleDropDownField =
-                typeof(ResorceRow).GetField("moduleDropDown",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-            private static readonly FieldInfo ButonDeleteFieldB =
-                typeof(ResorceRow).GetField("butonDelete",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-            private static readonly FieldInfo AddMultiFieldB =
-                typeof(ResorceRow).GetField("addMulti",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-
-            static bool Prefix(ResorceRow __instance)
-            {
-                if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
-                try
-                {
-                    var dd = ModuleDropDownField?.GetValue(__instance) as DropDownEnum;
-                    if (dd?.dropDown != null) dd.dropDown.interactable = false;
-                    var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
-                    if (del != null) del.interactable = false;
-                    var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
-                    if (am != null) am.gameObject.SetActive(false);
-                    return false; // skip original (which would also lock the crew slider)
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_BlockDropDown_KeepCrewSlider: " + ex);
-                    return true; // fallback: run original
+                    try
+                    {
+                        var oiw = __instance.GetComponentInParent<ObjectInfoWindow>();
+                        if (oiw != null && oiw.Open)
+                        {
+                            // RefreshUI() is protected — call via reflection
+                            var refreshMethod = typeof(ObjectInfoWindow).GetMethod("RefreshUI",
+                                BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (refreshMethod != null)
+                                refreshMethod.Invoke(oiw, null);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] Patch_OnButtonDelete: " + ex);
+                    }
                 }
             }
         }
     }
-}
 }
