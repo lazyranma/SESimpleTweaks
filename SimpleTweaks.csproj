@@ -72,7 +72,7 @@
     <RemoveDir Directories="$(_StageRoot)" />
     <MakeDir Directories="$(_StageRoot)SimpleTweaks\" />
     <Copy SourceFiles="$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(_StageRoot)SimpleTweaks\" />
-    <ZipDirectory SourceDirectory="$(_StageRoot)" DestinationFile="$(OutputPath)SimpleTweaks.zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(_StageRoot)" DestinationFile="$(OutputPath)SimpleTweaks_v$(PluginVersion).zip" Overwrite="true" />
     <RemoveDir Directories="$(_StageRoot)" />
   </Target>
 
