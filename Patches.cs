@@ -615,21 +615,35 @@ namespace SimpleTweaks
 
                     if (currentFacility == null || currentFacility.BuildProgress >= 1f)
                         return true;
-                    if (!Input.GetKey(KeyCode.LeftShift))
-                        return true;
+
+                    bool shiftHeld = Input.GetKey(KeyCode.LeftShift);
 
                     var current = SerializedMonoBehaviourSingleton<UIManager>.Instance.Current;
                     if (current is PlanMissionWindow pmw && pmw.Open)
                         return true;
 
+                    // Close stale second ObjectInfoWindow before navigating back.
+                    // The vanilla Open() call only manages the primary window, so
+                    // a second window (e.g. from PlanMission) would remain visible
+                    // with outdated data. Do this for both normal and Shift-clicks.
+                    var uiManager = SerializedMonoBehaviourSingleton<UIManager>.Instance;
+                    if (uiManager.ObjectInfoSecondWindow != null
+                        && uiManager.ObjectInfoSecondWindow.Open)
+                        uiManager.ObjectInfoSecondWindow.HideNoImmediately();
+
+                    if (!shiftHeld)
+                        return true; // normal click: let vanilla handle single cancel
+
                     ObjectInfoData oid = currentFacility.ObjectInfoData;
-                    var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
+                    var descriptor = currentFacility.facilityDescriptor;
+                    var toCancel = oid.ListFacility
+                        .Where(f => f.BuildProgress < 1f && f.facilityDescriptor == descriptor)
+                        .ToList();
                     foreach (Facility f in toCancel)
                         f.CancelBuild();
 
                     Traverse.Create(__instance).Field("currentFacility").SetValue(null);
-                    SerializedMonoBehaviourSingleton<UIManager>.Instance
-                        .Open(EWindowType.ObjectInfo, oid.ObjectInfo);
+                    uiManager.Open(EWindowType.ObjectInfo, oid.ObjectInfo);
                     return false;
                 }
                 catch (Exception ex)
@@ -680,8 +694,8 @@ namespace SimpleTweaks
 
         // ─────────────────────────────────────────────────────────────────────────
         // Feature 9b: Shift+Click on the X button (upper-right corner of a
-        // facility icon in the Object Info list) cancels ALL facilities under
-        // construction on that body.
+        // facility icon in the Object Info list) cancels all facilities of the
+        // same type under construction on that body.
         // ─────────────────────────────────────────────────────────────────────────
         [HarmonyPatch(typeof(UIFacilityList), "CancelBuilding")]
         public static class Patch_UIFacilityList_CancelAllBuildings
@@ -695,15 +709,21 @@ namespace SimpleTweaks
                     if (facility == null || facility.BuildProgress >= 1f) return true;
 
                     ObjectInfoData oid = facility.ObjectInfoData;
-                    var toCancel = oid.ListFacility.Where(f => f.BuildProgress < 1f).ToList();
+                    var descriptor = facility.facilityDescriptor;
+                    var toCancel = oid.ListFacility
+                        .Where(f => f.BuildProgress < 1f && f.facilityDescriptor == descriptor)
+                        .ToList();
                     foreach (Facility f in toCancel)
                         f.CancelBuild();
 
-                    // Refresh the existing ObjectInfoWindow in place (don't reopen)
-                    var window = SerializedMonoBehaviourSingleton<UIManager>.Instance
-                        .GetWindow<ObjectInfoWindow>();
+                    // Refresh all existing ObjectInfoWindows in place (don't reopen)
+                    var uiManager = SerializedMonoBehaviourSingleton<UIManager>.Instance;
+                    var window = uiManager.GetWindow<ObjectInfoWindow>();
                     if (window != null && window.Open)
                         window.SetData(oid.ObjectInfo);
+                    var secondWindow = uiManager.GetSecondWindow<ObjectInfoWindow>();
+                    if (secondWindow != null && secondWindow.Open)
+                        secondWindow.SetData(oid.ObjectInfo);
                     return false;
                 }
                 catch (Exception ex)
@@ -743,8 +763,8 @@ namespace SimpleTweaks
             }
 
             // Feature 9c: Shift+Click on the X (cross) button in a Spacecraft or
-            // Launch Vehicle construction queue row cancels the ENTIRE construction
-            // queue for that body.
+            // Launch Vehicle construction queue row cancels all items of the same
+            // type (e.g. same ship class) in the construction queue.
             // ─────────────────────────────────────────────────────────────────────────
             [HarmonyPatch(typeof(UIRowRocket), "OnCancelBuildClick")]
             public static class Patch_UIRowRocket_CancelAllConstruction
@@ -763,12 +783,20 @@ namespace SimpleTweaks
                         var currentOI = window?.ObjectInfoCurrent;
 
                         var constructions = oid.GetListRocketConstruct()
-                            .Where(c => c.BuildProgress < 1f).ToList();
+                            .Where(c => c.BuildProgress < 1f)
+                            .Where(c =>
+                                (rcd.SpacecraftType != null && c.SpacecraftType == rcd.SpacecraftType) ||
+                                (rcd.LaunchVehicleType != null && c.LaunchVehicleType == rcd.LaunchVehicleType))
+                            .ToList();
                         foreach (var c in constructions)
                             c.CancelBuild();
 
                         if (window != null && window.Open)
                             window.SetData(currentOI ?? oid.ObjectInfo);
+                        var secondWindow = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                            .GetSecondWindow<ObjectInfoWindow>();
+                        if (secondWindow != null && secondWindow.Open)
+                            secondWindow.SetData(currentOI ?? oid.ObjectInfo);
                         return false;
                     }
                     catch (Exception ex)
@@ -809,8 +837,8 @@ namespace SimpleTweaks
 
             // ─────────────────────────────────────────────────────────────────────────
             // Feature 9d: Shift+Click on the CANCEL BUILDING button in the Spacecraft
-            // / Launch Vehicle info window cancels ALL constructions of that type
-            // (spacecraft or launch vehicles) on the body.
+            // / Launch Vehicle info window cancels all constructions of that exact
+            // type (e.g. same ship class, not just SC vs LV) on the body.
             // ─────────────────────────────────────────────────────────────────────────
             [HarmonyPatch(typeof(SpaceCraftInfoWindow), "OnCancelBuildButtonClick")]
             public static class Patch_SpaceCraftInfoWindow_CancelAllConstruction
@@ -832,7 +860,9 @@ namespace SimpleTweaks
 
                         var constructions = oid.GetListRocketConstruct()
                             .Where(c => c.BuildProgress < 1f)
-                            .Where(c => isSC ? c.SpacecraftType != null : c.LaunchVehicleType != null)
+                            .Where(c => isSC
+                                ? c.SpacecraftType == rcd.SpacecraftType
+                                : c.LaunchVehicleType == rcd.LaunchVehicleType)
                             .ToList();
                         foreach (var c in constructions)
                             c.CancelBuild();
@@ -840,6 +870,10 @@ namespace SimpleTweaks
                         __instance.HideImmediately();
                         if (window != null && window.Open)
                             window.SetData(currentOI ?? oid.ObjectInfo);
+                        var secondWindow = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                            .GetSecondWindow<ObjectInfoWindow>();
+                        if (secondWindow != null && secondWindow.Open)
+                            secondWindow.SetData(currentOI ?? oid.ObjectInfo);
                         return false;
                     }
                     catch (Exception ex)

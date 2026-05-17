@@ -8,7 +8,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 
 - **Ctrl+Click x100** — Ctrl+Click to add/remove 100 items for all buttons where Shift+Click adds/removes 10: build queue; selecting spacecraft, adding modules to cargo in mission planner.
 - **Module Multi-Removal** — Remove 10 or 100 modules at once from cargo in mission planner.
-- **Clear Build Queue** — Shift+Click the "Cancel Building" button or the X button on a facility icon to cancel all facilities/spacecraft/launch vehicles under construction on that celestial body.
+- **Clear Build Queue** — Shift+Click the "Cancel Building" button or the X button on a facility/spacecraft row to cancel all items of the same type from the construction queue. Also removes stale duplicate Object Info window.
 - **Deposit Tooltips** — Hover over resource icons in the Object Search list to see the actual info for the largest deposit.
 - **Asteroid Tow** — Display Atlas/Engine requirements for asteroids and comets directly in Object Search.
 - ~~**Mirror/Shade Bug Fix** — Corrects solar mirror thermal transfer physics on save load.~~
