@@ -16,7 +16,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Unsticky Crew** — When clicking + to add crew compartment modules, newly added modules inherit the same crew count as the last module. The crew slider is unlocked for all modules.
 - **Space Bin** — Trash bin button in the Object Search list for every asteroid that can be deleted.
 - **Full Cycle** — Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
-- **Leave No Trace** — Hides resources in the Object Info stockpile that have trace amounts (< 0.01) left over from floating-point rounding errors in the construction cost discount system.
+- **Leave No Trace** — Eliminates floating-point noise from construction cost discounts by rounding at key arithmetic points, preventing trace amounts from ever appearing.
 
 ## Installation
 
