@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -13,7 +16,24 @@ namespace SimpleTweaks
         {
             Log = Logger;
             Log.LogInfo("SimpleTweaks loaded.");
-            new Harmony("com.simpletweaks").PatchAll();
+
+            var harmony = new Harmony("com.simpletweaks");
+
+            foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+            {
+                var attrs = type.GetCustomAttributes<HarmonyPatch>();
+                if (!attrs.Any()) continue;
+
+                try
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception ex)
+                {
+                    Log.LogError($"[SimpleTweaks] Failed to patch {type.FullName}: {ex.Message}");
+                    Log.LogDebug($"[SimpleTweaks] {ex}");
+                }
+            }
         }
     }
 }
