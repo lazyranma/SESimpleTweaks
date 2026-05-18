@@ -18,6 +18,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Full Cycle** — Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
 - **Leave No Trace** — Eliminates floating-point noise from construction cost discounts by rounding at key arithmetic points, preventing trace amounts from ever appearing.
 - **Fleet Scales** — Scales the amount of resources added to cargo at once based on the size of the fleet.
+- **Mass Effect** — Removes negative-mass solid-phase fractions by clamping the liquid phase to the available non-gas budget so the solid phase never becomes negative.
 
 > Struck-out tweaks were removed in v0.5 because the 0.26.5.15.14 open beta includes native fixes for them.
 

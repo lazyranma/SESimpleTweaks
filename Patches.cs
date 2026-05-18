@@ -1723,4 +1723,132 @@ namespace SimpleTweaks
             return codes;
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Feature: Mass Effect — fixes negative solid phase fractions.
+    //
+    // In UpdateDepositStates, the solid persistence formula can produce
+    // negative solidFraction when gasFraction + liquidAngle/π > 1.
+    // This clamps liquidFraction to 1−gasFraction so solidFraction ≥ 0.
+    // Mass is strictly conserved (fractions always sum to 1).
+    // Existing saves self-correct within one monthly tick.
+    // ─────────────────────────────────────────────────────────────────────────
+    [HarmonyPatch(typeof(Data.ScriptableObject.Terraformation.TerraformationConfig.HabitabilityParametersNew), "UpdateDepositStates")]
+    public static class Patch_UpdateDepositStates_MassEffect
+    {
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+
+            // Step 1 — find ldc.r8 0.9 (persistence factor, unique in this method)
+            int idx09 = -1;
+            for (int i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Ldc_R8 &&
+                    codes[i].operand is double d &&
+                    Math.Abs(d - 0.9) < 0.0001)
+                {
+                    idx09 = i;
+                    break;
+                }
+            }
+
+            if (idx09 < 0)
+            {
+                Plugin.Log.LogWarning("[MassEffect] Could not find ldc.r8 0.9 in UpdateDepositStates");
+                return codes;
+            }
+
+            // Step 2 — find 1st stloc after 0.9 → liquidFraction (num13)
+            int num13Idx = -1;
+            int stloc1Pos = -1;
+            for (int i = idx09 + 1; i < codes.Count; i++)
+            {
+                if (IsStloc(codes[i]))
+                {
+                    stloc1Pos = i;
+                    num13Idx = GetLocalIndex(codes[i]);
+                    break;
+                }
+            }
+
+            if (num13Idx < 0)
+            {
+                Plugin.Log.LogWarning("[MassEffect] Could not find stloc num13 (liquidFraction)");
+                return codes;
+            }
+
+            // Step 3 — find 2nd stloc after 0.9 → solidFraction (num14)
+            int num14Idx = -1;
+            int stloc2Pos = -1;
+            for (int i = stloc1Pos + 1; i < codes.Count; i++)
+            {
+                if (IsStloc(codes[i]))
+                {
+                    stloc2Pos = i;
+                    num14Idx = GetLocalIndex(codes[i]);
+                    break;
+                }
+            }
+
+            if (num14Idx < 0)
+            {
+                Plugin.Log.LogWarning("[MassEffect] Could not find stloc num14 (solidFraction)");
+                return codes;
+            }
+
+            // Step 4 — inject fixup after stloc num14.
+            //
+            // When num14 (solidFraction) < 0, we shift the deficit from liquid:
+            //   num13 += num14   (num13 was over-allocated by |num14|)
+            //   num14 = 0
+            // When num14 ≥ 0 this is a no-op.
+            //
+            // IL:
+            //   ldloc num14;  ldc.r8 0;  bge.s AFTER;
+            //   ldloc num13;  ldloc num14;  add;  stloc num13;
+            //   ldc.r8 0;    stloc num14;
+            // AFTER:
+
+            var afterLabel = new Label();
+            if (stloc2Pos + 1 < codes.Count)
+                codes[stloc2Pos + 1].labels.Add(afterLabel);
+
+            var fixup = new List<CodeInstruction>
+            {
+                new CodeInstruction(OpCodes.Ldloc_S, (byte)num14Idx),
+                new CodeInstruction(OpCodes.Ldc_R8, 0.0),
+                new CodeInstruction(OpCodes.Bge_S, afterLabel),
+                new CodeInstruction(OpCodes.Ldloc_S, (byte)num13Idx),
+                new CodeInstruction(OpCodes.Ldloc_S, (byte)num14Idx),
+                new CodeInstruction(OpCodes.Add),
+                new CodeInstruction(OpCodes.Stloc_S, (byte)num13Idx),
+                new CodeInstruction(OpCodes.Ldc_R8, 0.0),
+                new CodeInstruction(OpCodes.Stloc_S, (byte)num14Idx),
+            };
+
+            codes.InsertRange(stloc2Pos + 1, fixup);
+            return codes;
+        }
+
+        static bool IsStloc(CodeInstruction ci)
+        {
+            var op = ci.opcode;
+            return op == OpCodes.Stloc || op == OpCodes.Stloc_S
+                || op == OpCodes.Stloc_0 || op == OpCodes.Stloc_1
+                || op == OpCodes.Stloc_2 || op == OpCodes.Stloc_3;
+        }
+
+        static int GetLocalIndex(CodeInstruction ci)
+        {
+            if (ci.operand is LocalVariableInfo lvi) return lvi.LocalIndex;
+            if (ci.operand is LocalBuilder lb) return lb.LocalIndex;
+            if (ci.operand is byte b) return b;
+            if (ci.operand is int i) return i;
+            if (ci.operand is short s) return s;
+            if (ci.operand is sbyte sb) return sb;
+            return -1;
+        }
+    }
 }
