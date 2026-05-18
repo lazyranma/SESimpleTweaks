@@ -16,6 +16,7 @@ using Game.UI.Windows.Elements.ObjectInfoElements;
 using Game.UI.Windows.Elements.MissionsElements;
 using Game.UI.Windows.Elements.PlanMissionElements;
 using Game.UI.Windows.Elements.SearchObjectElements;
+using Game.UI.Windows.Elements.SpaceCraftConstructElements;
 using Game.UI.Windows.Windows;
 using HarmonyLib;
 using Language;
@@ -1521,24 +1522,49 @@ namespace SimpleTweaks
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Hide stockpile resources with amount < 0.01 in ObjectInfoWindow.
-        // These trace amounts are floating-point artifacts from construction
-        // cost discounts, not real resources the player can use.
+        // Leave No Trace — Eliminate floating-point noise from construction
+        // cost discounts by rounding at key arithmetic points, and remove
+        // deposits that fall below the precision threshold.
+        //
+        // Patch 1: Round the multiplier before multiplication.
+        //   Kills float noise at the earliest point. 0.730000019f → 0.73.
         // ─────────────────────────────────────────────────────────────────────
-        [HarmonyPatch(typeof(ObjectInfoWindow), nameof(ObjectInfoWindow.GetListRowResourcesDataToShowUI))]
-        public static class Patch_ObjectInfoWindow_HideTraceResources
+        [HarmonyPatch(typeof(ResourcePrice), "op_Multiply", new Type[] { typeof(double), typeof(ResourcePrice) })]
+        public static class Patch_ResourcePrice_RoundMultiplier
         {
-            static void Postfix(ref List<RowResourcesData> __result)
+            static void Prefix(ref double a)
             {
-                try
-                {
-                    if (__result == null || __result.Count == 0) return;
-                    __result = __result.Where(r => r.Value >= 0.01).ToList();
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.LogError("[SimpleTweaks] Patch_HideTraceResources: " + ex);
-                }
+                a = Math.Round(a, 6);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Patch 2: Round stockpile after every subtraction.
+        //   Cleans up any floating-point residue immediately.
+        //   4.500000000000001 → 4.5.  1.2e-15 → 0.0.
+        // ─────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(RowResourcesData), nameof(RowResourcesData.Remove))]
+        public static class Patch_RowResourcesData_RoundAfterRemove
+        {
+            static void Postfix(RowResourcesData __instance)
+            {
+                __instance.Value = Math.Round(__instance.Value, 6);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Patch 3: Raise the deposit cleanup threshold from 1e-7 to 1e-6.
+        //   Combined with Patch 2, a fully-depleted deposit becomes 0.0 and
+        //   is removed at the next monthly tick (or immediately if
+        //   UpdateDepositStates fires).
+        // ─────────────────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(MyExtensions), nameof(MyExtensions.IsNearZero), new Type[] { typeof(double) })]
+        public static class Patch_MyExtensions_IsNearZeroThreshold
+        {
+            static bool Prefix(double value, ref bool __result)
+            {
+                __result = Math.Abs(value) < 1E-06;
+                return false; // skip original
             }
         }
     }
