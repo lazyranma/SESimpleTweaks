@@ -1706,8 +1706,13 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost")]
     public static class Patch_FleetScale_CargoFloor
     {
-        private static MethodInfo _getCargoCap = AccessTools.Method(
-            typeof(SpacecraftType), nameof(SpacecraftType.GetCargoCapacity));
+        // Stable (0.26.4.29): only the property getter exists in the
+        // LowOrbitContainer early-return path (IL_0049). The SolarSC path
+        // uses GetCargoCapacity(Company) at IL_008b and already multiplies
+        // by SCCount.  Beta (0.26.5+) has two more GetCargoCapacity calls
+        // in a new guard block, but those don't exist here.
+        private static MethodInfo _getCargoCapProp = AccessTools.PropertyGetter(
+            typeof(SpacecraftType), nameof(SpacecraftType.CargoCapacity));
         private static FieldInfo _fld_planMissionWindow = AccessTools.Field(
             typeof(PMTab), "planMissionWindow");
         private static MethodInfo _get_PMMParameter = AccessTools.PropertyGetter(
@@ -1726,7 +1731,7 @@ namespace SimpleTweaks
                 new CodeInstruction(OpCodes.Callvirt, _get_PMMParameter),
                 new CodeInstruction(OpCodes.Callvirt, _get_ScCount),
             };
-            FleetScaleTranspiler.Patch(codes, _getCargoCap, countLoaders, skipCount: 1, expectedMin: 2);
+            FleetScaleTranspiler.Patch(codes, _getCargoCapProp, countLoaders, skipCount: 0, expectedMin: 1);
             return codes;
         }
     }
