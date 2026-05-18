@@ -92,6 +92,56 @@ namespace SimpleTweaks
         }
     }
 
+    /// <summary>
+    /// Shared transpiler helper for Fleet Scales patches.
+    /// Finds calls to a target method in IL, skips the first N occurrences,
+    /// and after each remaining call injects IL that multiplies the return
+    /// value (double) by a count loaded via the provided countLoaders.
+    /// </summary>
+    internal static class FleetScaleTranspiler
+    {
+        public static int Patch(
+            List<CodeInstruction> codes,
+            MethodInfo targetMethod,
+            CodeInstruction[] countLoaders,
+            int skipCount,
+            int expectedMin = 1)
+        {
+            if (targetMethod == null || countLoaders == null)
+                return 0;
+
+            int seen = 0;
+            int patched = 0;
+            for (int i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Callvirt
+                    && codes[i].operand is MethodInfo m
+                    && m == targetMethod)
+                {
+                    seen++;
+                    if (seen <= skipCount)
+                        continue;
+
+                    var injections = new List<CodeInstruction>(countLoaders);
+                    injections.Add(new CodeInstruction(OpCodes.Conv_R8));
+                    injections.Add(new CodeInstruction(OpCodes.Mul));
+
+                    codes.InsertRange(i + 1, injections);
+                    patched++;
+                    i += injections.Count;
+                }
+            }
+
+            if (patched < expectedMin)
+            {
+                Plugin.Log.LogWarning(
+                    $"[FleetScales] transpiler: expected >= {expectedMin} patches " +
+                    $"for {targetMethod.Name}, got {patched} (seen {seen} total calls)");
+            }
+            return patched;
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Localisation: intercept LEManager.Get for SimpleTweaks.* keys.
     // Returns a translation from LocalisationData using the current locale,
@@ -1605,6 +1655,111 @@ namespace SimpleTweaks
                 __result = Math.Abs(value) < 1E-06;
                 return false; // skip original
             }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fleet Scale — fixes the "perfect DV" cargo limit and drag-and-drop
+    // cargo amounts to account for the number of selected spacecraft (SCCount)
+    // instead of always using a single ship's capacity.
+    //
+    // Three single-unit sites, all missing `× scCount`:
+    // 1. MaxValueSliderFuelToCalculateLoadLimit2 — every GetFuelCapacity call.
+    //    Transpiler injects × SCCount after each.
+    // 2. CalculateLoadLimit2ToBeOkayMinFuelCost — the cargo-capacity floor
+    //    (2nd+ GetCargoCapacity call).  Transpiler injects × SCCount.
+    // 3. AddCargoOrbit — drag-and-drop handler for surface starts.
+    //    Transpiler injects × SCCount into its GetCargoCapacity call.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fleet Scale — multiply every GetFuelCapacity result by SCCount,
+    /// fixing the comparison, the cap, and the ignoreLimit path at the source.
+    /// </summary>
+    [HarmonyPatch(typeof(PMMissionParameter), "MaxValueSliderFuelToCalculateLoadLimit2")]
+    public static class Patch_FleetScale_FuelCap
+    {
+        private static MethodInfo _getFuelCap = AccessTools.Method(
+            typeof(SpacecraftType), nameof(SpacecraftType.GetFuelCapacity));
+        private static MethodInfo _getScCount = AccessTools.PropertyGetter(
+            typeof(PMMissionParameter), nameof(PMMissionParameter.SCCount));
+
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            var countLoaders = new[]
+            {
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Call, _getScCount),
+            };
+            FleetScaleTranspiler.Patch(codes, _getFuelCap, countLoaders, skipCount: 0, expectedMin: 3);
+            return codes;
+        }
+    }
+
+    /// <summary>
+    /// Fleet Scale — the search-loop upper bound is floored at single-ship
+    /// cargo capacity.  Scale that floor to fleet level so the loop can
+    /// explore the full cargo range when fleet cargo > fleet fuel.
+    /// </summary>
+    [HarmonyPatch(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost")]
+    public static class Patch_FleetScale_CargoFloor
+    {
+        private static MethodInfo _getCargoCap = AccessTools.Method(
+            typeof(SpacecraftType), nameof(SpacecraftType.GetCargoCapacity));
+        private static FieldInfo _fld_planMissionWindow = AccessTools.Field(
+            typeof(PMTab), "planMissionWindow");
+        private static MethodInfo _get_PMMParameter = AccessTools.PropertyGetter(
+            typeof(PlanMissionWindow), nameof(PlanMissionWindow.PMMissionParameter));
+        private static MethodInfo _get_ScCount = AccessTools.PropertyGetter(
+            typeof(PMMissionParameter), nameof(PMMissionParameter.SCCount));
+
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            var countLoaders = new[]
+            {
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldfld, _fld_planMissionWindow),
+                new CodeInstruction(OpCodes.Callvirt, _get_PMMParameter),
+                new CodeInstruction(OpCodes.Callvirt, _get_ScCount),
+            };
+            FleetScaleTranspiler.Patch(codes, _getCargoCap, countLoaders, skipCount: 1, expectedMin: 2);
+            return codes;
+        }
+    }
+
+    /// <summary>
+    /// Fleet Scale — AddCargoOrbit (drag-and-drop to orbit) uses single-ship
+    /// cargo capacity without multiplying by SCCount.
+    /// </summary>
+    [HarmonyPatch(typeof(PMTabCargo), "AddCargoOrbit", new System.Type[] { typeof(ResourceDefinition) })]
+    public static class Patch_FleetScale_AddCargoOrbit
+    {
+        private static MethodInfo _getCargoCap = AccessTools.Method(
+            typeof(SpacecraftType), nameof(SpacecraftType.GetCargoCapacity));
+        private static FieldInfo _fld_planMissionWindow = AccessTools.Field(
+            typeof(PMTab), "planMissionWindow");
+        private static MethodInfo _get_PMMParameter = AccessTools.PropertyGetter(
+            typeof(PlanMissionWindow), nameof(PlanMissionWindow.PMMissionParameter));
+        private static MethodInfo _get_ScCount = AccessTools.PropertyGetter(
+            typeof(PMMissionParameter), nameof(PMMissionParameter.SCCount));
+
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            var countLoaders = new[]
+            {
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldfld, _fld_planMissionWindow),
+                new CodeInstruction(OpCodes.Callvirt, _get_PMMParameter),
+                new CodeInstruction(OpCodes.Callvirt, _get_ScCount),
+            };
+            FleetScaleTranspiler.Patch(codes, _getCargoCap, countLoaders, skipCount: 0, expectedMin: 1);
+            return codes;
         }
     }
 }

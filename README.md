@@ -17,6 +17,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Space Bin** — Trash bin button in the Object Search list for every asteroid that can be deleted.
 - **Full Cycle** — Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
 - **Leave No Trace** — Eliminates floating-point noise from construction cost discounts by rounding at key arithmetic points, preventing trace amounts from ever appearing.
+- **Fleet Scales** — Scales the amount of resources added to cargo at once based on the size of the fleet.
 
 ## Installation
 
