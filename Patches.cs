@@ -12,6 +12,7 @@ using Game.Info;
 using Game.ObjectInfoDataScripts;
 using Game.ObjectInfoDataScripts.CustomFacilitiesAndModules;
 using Game.UI;
+using Game.UI.DragAndDropSystem;
 using Game.UI.Windows.Elements;
 using Game.UI.Windows.Elements.ObjectInfoElements;
 using Game.UI.Windows.Elements.MissionsElements;
@@ -1770,18 +1771,32 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Feature: Quick to Orbit II — Ctrl+Click on any planet/moon button in the
-    // quick-access body bar at the bottom opens that body's orbit ObjectInfo
-    // window instead of the body itself.  Ctrl+Shift+Click opens it in the
-    // secondary window.  Falls back to default behaviour when the body has no
-    // associated orbit (e.g. the Sun / Solar Orbit entries).
+    // Feature: Quick to Orbit II — in the quick-access body bar, Ctrl+Click
+    // opens a body's orbit ObjectInfo window instead of the body itself, and
+    // Ctrl+Shift+Click does the same in the secondary window.
+    // Ctrl+drop of modules/resources/ships redirects mission planner target to
+    // that body's orbit. Falls back to default behaviour when no orbit exists
+    // (e.g. the Sun / Solar Orbit entries).
     // ─────────────────────────────────────────────────────────────────────────
+    internal static class QuickToOrbitIIHelper
+    {
+        public static bool IsCtrlPressed()
+        {
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        }
+
+        public static ObjectInfo GetOrbitObjectInfo(ObjectInfo bodyInfo)
+        {
+            return bodyInfo?.LowOrbitCustom?.GetObjectInfo();
+        }
+    }
+
     [HarmonyPatch(typeof(HighlightHoverObject), "ChangeTarget")]
     public static class Patch_HighlightHoverObject_CtrlClickOrbit
     {
         static bool Prefix(HighlightHoverObject __instance)
         {
-            if (!Input.GetKey(KeyCode.LeftControl))
+            if (!QuickToOrbitIIHelper.IsCtrlPressed())
                 return true; // not Ctrl — let the original method handle it
 
             if (!__instance.enabled)
@@ -1793,7 +1808,7 @@ namespace SimpleTweaks
             if (bodyInfo == null || !HighlightHoverObject.clickObjectInfo)
                 return true;
 
-            ObjectInfo orbitInfo = bodyInfo.LowOrbitCustom?.GetObjectInfo();
+            ObjectInfo orbitInfo = QuickToOrbitIIHelper.GetOrbitObjectInfo(bodyInfo);
             if (orbitInfo == null)
                 return true; // no orbit for this body — fall back to normal
 
@@ -1828,6 +1843,28 @@ namespace SimpleTweaks
                         .Open(EWindowType.ObjectInfo, orbitInfo);
             }
 
+            return false; // skip original
+        }
+    }
+
+    [HarmonyPatch(typeof(HighlightHoverObject), "OnDragAndDrop")]
+    public static class Patch_HighlightHoverObject_CtrlDropOrbit
+    {
+        static bool Prefix(HighlightHoverObject __instance, DragAndDropTransactItem item, ref bool __result)
+        {
+            if (!QuickToOrbitIIHelper.IsCtrlPressed())
+                return true; // not Ctrl — let the original method handle it
+
+            ObjectInfo bodyInfo = Traverse.Create(__instance)
+                .Field("myTargetObjectInfo").GetValue<ObjectInfo>();
+            if (bodyInfo == null)
+                return true;
+
+            ObjectInfo orbitInfo = QuickToOrbitIIHelper.GetOrbitObjectInfo(bodyInfo);
+            if (orbitInfo == null)
+                return true; // no orbit for this body — fall back to normal
+
+            __result = orbitInfo.OnDragAndDrop(item);
             return false; // skip original
         }
     }
