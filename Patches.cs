@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using CameraControl;
 using Data;
 using Data.ScriptableObject;
 using Extensions;
@@ -1765,6 +1766,69 @@ namespace SimpleTweaks
             };
             FleetScaleTranspiler.Patch(codes, _getCargoCap, countLoaders, skipCount: 0, expectedMin: 1);
             return codes;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Feature: Quick to Orbit II — Ctrl+Click on any planet/moon button in the
+    // quick-access body bar at the bottom opens that body's orbit ObjectInfo
+    // window instead of the body itself.  Ctrl+Shift+Click opens it in the
+    // secondary window.  Falls back to default behaviour when the body has no
+    // associated orbit (e.g. the Sun / Solar Orbit entries).
+    // ─────────────────────────────────────────────────────────────────────────
+    [HarmonyPatch(typeof(HighlightHoverObject), "ChangeTarget")]
+    public static class Patch_HighlightHoverObject_CtrlClickOrbit
+    {
+        static bool Prefix(HighlightHoverObject __instance)
+        {
+            if (!Input.GetKey(KeyCode.LeftControl))
+                return true; // not Ctrl — let the original method handle it
+
+            if (!__instance.enabled)
+                return false;
+
+            ObjectInfo bodyInfo = Traverse.Create(__instance)
+                .Field("myTargetObjectInfo").GetValue<ObjectInfo>();
+
+            if (bodyInfo == null || !HighlightHoverObject.clickObjectInfo)
+                return true;
+
+            ObjectInfo orbitInfo = bodyInfo.LowOrbitCustom?.GetObjectInfo();
+            if (orbitInfo == null)
+                return true; // no orbit for this body — fall back to normal
+
+            bool shift = Input.GetKey(KeyCode.LeftShift);
+
+            if (shift)
+            {
+                ObjectInfoWindow secondWindow =
+                    SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .GetSecondWindow<ObjectInfoWindow>();
+                if (secondWindow.Open && secondWindow.ObjectInfoCurrent != orbitInfo)
+                    secondWindow.SetData(orbitInfo);
+                else if (secondWindow.Open && secondWindow.ObjectInfoCurrent == orbitInfo)
+                    MonoBehaviourSingleton<MyCameraController>.Instance
+                        .ChangeTarget(orbitInfo.gameObject.transform);
+                else if (!secondWindow.Open)
+                    SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .OpenSecondWindow(EWindowType.ObjectInfo, orbitInfo);
+            }
+            else
+            {
+                ObjectInfoWindow window =
+                    SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .GetWindow<ObjectInfoWindow>();
+                if (window.Open && window.ObjectInfoCurrent != orbitInfo)
+                    window.SetData(orbitInfo);
+                else if (window.Open && window.ObjectInfoCurrent == orbitInfo)
+                    MonoBehaviourSingleton<MyCameraController>.Instance
+                        .ChangeTarget(orbitInfo.gameObject.transform);
+                else if (!window.Open)
+                    SerializedMonoBehaviourSingleton<UIManager>.Instance
+                        .Open(EWindowType.ObjectInfo, orbitInfo);
+            }
+
+            return false; // skip original
         }
     }
 

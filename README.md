@@ -13,6 +13,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Asteroid Tow** — Display Atlas/Engine requirements for asteroids and comets directly in Object Search.
 - **Mirror/Shade Bug Fix** — Corrects solar mirror thermal transfer physics on save load.
 - **Quick to Orbit** — Small ↑/↓ button inside the destination field in Plan Mission that selects a body's orbit or a orbit's body.
+- **Quick to Orbit II** — Ctrl+Click on a planet/moon in the quick-access body bar opens that body's orbit info window. Ctrl+Shift+Click opens it in the secondary window.
 - **Unsticky Crew** — When clicking + to add crew compartment modules, newly added modules inherit the same crew count as the last module. The crew slider is unlocked for all modules.
 - **Space Bin** — Trash bin button in the Object Search list for every asteroid that can be deleted.
 - **Full Cycle** — Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
