@@ -115,18 +115,6 @@ namespace SimpleTweaks
                 ["SimpleTweaks.Tooltip.GoToOrbit"]             = "Definir destino para a \u00f3rbita do corpo de origem",
                 ["SimpleTweaks.Tooltip.GoToSurface"]           = "Definir destino para a superf\u00edcie do corpo de origem",
             },
-            ["pt-PT"] = new Dictionary<string, string>
-            {
-                ["SimpleTweaks.Tooltip.CtrlHint"]              = "Ctrl+Clique: \u00b1100",
-                ["SimpleTweaks.Tooltip.BuildShiftCtrl"]        = "Shift+Clique: \u00d710\nCtrl+Clique: \u00d7100",
-                ["SimpleTweaks.Tooltip.AddModuleShiftCtrl"]    = "Shift+Clique: adicionar \u00d710\nCtrl+Clique: adicionar \u00d7100",
-                ["SimpleTweaks.Tooltip.RemoveModuleShiftCtrl"] = "Shift+Clique: remover \u00d710\nCtrl+Clique: remover \u00d7100",
-                ["SimpleTweaks.Tooltip.CancelAllBuildings"]    = "Shift+Clique: cancelar todos os edif\u00edcios deste tipo em constru\u00e7\u00e3o neste corpo",
-                ["SimpleTweaks.Tooltip.CancelAllConstruction"] = "Shift+Clique: cancelar todos os itens deste tipo na fila de constru\u00e7\u00e3o",
-                ["SimpleTweaks.Tooltip.DeleteAsteroid"]        = "Destruir objeto",
-                ["SimpleTweaks.Tooltip.GoToOrbit"]             = "Definir destino para a \u00f3rbita do corpo de origem",
-                ["SimpleTweaks.Tooltip.GoToSurface"]           = "Definir destino para a superf\u00edcie do corpo de origem",
-            },
             ["ru-RU"] = new Dictionary<string, string>
             {
                 ["SimpleTweaks.Tooltip.CtrlHint"]              = "Ctrl+\u041a\u043b\u0438\u043a: \u00b1100",
