@@ -29,6 +29,5 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 2. **Extract plugin** — Unzip `SimpleTweaks.zip` into `BepInEx\plugins\`.
 
 ## Download
-Game version: 0.26.4.29.11. v0.4.4 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.4.4/SimpleTweaks_v0.4.4.zip)
-
-Game version: 0.26.5.15.14. v0.5.5 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.5.5/SimpleTweaks_v0.5.5.zip) (open beta)
+Game version: 0.26.4.29.11. v0.4.4 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.4.4/SimpleTweaks_v0.4.4.zip)  
+Game version: 0.26.5.21.13. v0.5.6 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.5.6/SimpleTweaks_v0.5.6.zip) (open beta)
