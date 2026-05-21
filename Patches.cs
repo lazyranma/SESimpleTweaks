@@ -1609,15 +1609,21 @@ namespace SimpleTweaks
     // Three single-unit sites, all missing `× scCount`:
     // 1. MaxValueSliderFuelToCalculateLoadLimit2 — every GetFuelCapacity call.
     //    Transpiler injects × SCCount after each.
-    // 2. CalculateLoadLimit2ToBeOkayMinFuelCost — the cargo-capacity floor
-    //    (2nd+ GetCargoCapacity call).  Transpiler injects × SCCount.
-    // 3. AddCargoOrbit — drag-and-drop handler for surface starts.
+    //    Postfix also floors result at fleet cargo capacity so the search range
+    //    in CalculateLoadLimit2ToBeOkayMinFuelCost covers the full cargo range.
+    //    (This replaces a former Transpiler on that method — which was wrapped
+    //    in a try-catch in the May 2026 beta, causing any transpiler exception
+    //    to be silently swallowed and the method to return 0.)
+    // 2. AddCargoOrbit — drag-and-drop handler for surface starts.
     //    Transpiler injects × SCCount into its GetCargoCapacity call.
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Fleet Scale — multiply every GetFuelCapacity result by SCCount,
     /// fixing the comparison, the cap, and the ignoreLimit path at the source.
+    /// Also floors the result at fleet cargo capacity so the binary-search
+    /// upper bound in CalculateLoadLimit2ToBeOkayMinFuelCost covers the full
+    /// cargo range when fleet cargo exceeds fleet fuel.
     /// </summary>
     [HarmonyPatch(typeof(PMMissionParameter), "MaxValueSliderFuelToCalculateLoadLimit2")]
     public static class Patch_FleetScale_FuelCap
@@ -1639,38 +1645,21 @@ namespace SimpleTweaks
             FleetScaleTranspiler.Patch(codes, _getFuelCap, countLoaders, skipCount: 0, expectedMin: 3);
             return codes;
         }
-    }
 
-    /// <summary>
-    /// Fleet Scale — the search-loop upper bound is floored at single-ship
-    /// cargo capacity.  Scale that floor to fleet level so the loop can
-    /// explore the full cargo range when fleet cargo > fleet fuel.
-    /// </summary>
-    [HarmonyPatch(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost")]
-    public static class Patch_FleetScale_CargoFloor
-    {
-        private static MethodInfo _getCargoCap = AccessTools.Method(
-            typeof(SpacecraftType), nameof(SpacecraftType.GetCargoCapacity));
-        private static FieldInfo _fld_planMissionWindow = AccessTools.Field(
-            typeof(PMTab), "planMissionWindow");
-        private static MethodInfo _get_PMMParameter = AccessTools.PropertyGetter(
-            typeof(PlanMissionWindow), nameof(PlanMissionWindow.PMMissionParameter));
-        private static MethodInfo _get_ScCount = AccessTools.PropertyGetter(
-            typeof(PMMissionParameter), nameof(PMMissionParameter.SCCount));
-
-        [HarmonyTranspiler]
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        [HarmonyPostfix]
+        static void Postfix(PMMissionParameter __instance, ref double __result)
         {
-            var codes = new List<CodeInstruction>(instructions);
-            var countLoaders = new[]
-            {
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldfld, _fld_planMissionWindow),
-                new CodeInstruction(OpCodes.Callvirt, _get_PMMParameter),
-                new CodeInstruction(OpCodes.Callvirt, _get_ScCount),
-            };
-            FleetScaleTranspiler.Patch(codes, _getCargoCap, countLoaders, skipCount: 1, expectedMin: 2);
-            return codes;
+            // Floor at fleet cargo capacity so CalculateLoadLimit2ToBeOkayMinFuelCost
+            // searches the full cargo range when fleet cargo > fleet fuel.
+            // Doing this here (rather than transpiling the try-catch method directly)
+            // avoids any risk of our injection being caught and silently returning 0.
+            var sc = __instance.SC;
+            if (sc == null) return;
+            var sct = sc.GetTypeSpaceCraft();
+            if (sct == null) return;
+            double fleetCargoCap = sct.GetCargoCapacity(__instance.FlyCompany) * __instance.SCCount;
+            if (__result < fleetCargoCap)
+                __result = fleetCargoCap;
         }
     }
 
