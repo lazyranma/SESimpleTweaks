@@ -20,6 +20,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Leave No Trace** — Eliminates floating-point noise from construction cost discounts by rounding at key arithmetic points, preventing trace amounts from ever appearing.
 - **Fleet Scales** — Scales the amount of resources added to cargo at once based on the size of the fleet.
 - **Mass Effect** — Removes negative-mass solid-phase fractions by clamping the liquid phase to the available non-gas budget so the solid phase never becomes negative.
+- **Keep Scanning** — Idle telescopes and observatories automatically start discovering asteroids when a slot opens up. When all asteroids are discovered, they fall back to surveying resources instead.
 
 > Struck-out tweaks were removed in v0.5 because the 0.26.5.15.14 open beta includes native fixes for them.
 
