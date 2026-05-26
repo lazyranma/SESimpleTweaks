@@ -606,8 +606,7 @@ namespace SimpleTweaks
         {
             try
             {
-                var btnAccept = Traverse.Create(__instance).Field("btnAccept")
-                    .GetValue<UnityEngine.UI.Button>();
+                var btnAccept = __instance.RectTransformBtnAccept?.GetComponent<UnityEngine.UI.Button>();
                 if (btnAccept == null) return;
 
                 var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
@@ -632,8 +631,7 @@ namespace SimpleTweaks
         {
             try
             {
-                var btnAccept = Traverse.Create(__instance).Field("btnAccept")
-                    .GetValue<UnityEngine.UI.Button>();
+                var btnAccept = __instance.RectTransformBtnAccept?.GetComponent<UnityEngine.UI.Button>();
                 if (btnAccept == null) return;
 
                 var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
@@ -659,8 +657,7 @@ namespace SimpleTweaks
         {
             try
             {
-                Facility currentFacility = Traverse.Create(__instance)
-                    .Field("currentFacility").GetValue<Facility>();
+                Facility currentFacility = __instance.CurrentFacility;
 
                 if (currentFacility == null || currentFacility.BuildProgress >= 1f)
                     return true;
@@ -715,9 +712,8 @@ namespace SimpleTweaks
         {
             try
             {
-                var traverse = Traverse.Create(__instance);
-                var currentFacility = traverse.Field("currentFacility").GetValue<Facility>();
-                var actionButton = traverse.Field("actionButton")
+                var currentFacility = __instance.CurrentFacility;
+                var actionButton = Traverse.Create(__instance).Field("actionButton")
                     .GetValue<UnityEngine.UI.Button>();
                 if (actionButton == null) return;
 
@@ -1093,9 +1089,6 @@ namespace SimpleTweaks
         internal static readonly FieldInfo StartInputField =
             typeof(PMTabDestination).GetField("startInput",
                 BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo SearchBtnOnInput =
-            typeof(ObjectSearchInputField).GetField("searchButton",
-                BindingFlags.NonPublic | BindingFlags.Instance);
 
         // instance → button+label — used by the refresh patches below
         internal sealed class DestShortcutEntry
@@ -1118,7 +1111,7 @@ namespace SimpleTweaks
                 var destInput = DestInputField?.GetValue(__instance) as ObjectSearchInputField;
                 var startInput = StartInputField?.GetValue(__instance) as ObjectSearchInputField;
                 if (destInput == null || startInput == null) return;
-                var searchBtn = SearchBtnOnInput?.GetValue(destInput) as UnityEngine.UI.Button;
+                var searchBtn = destInput?.SearchButtonRectTransform?.GetComponent<UnityEngine.UI.Button>();
 
                 // ── build button game object ───────────────────────────────
                 var btnGo = new GameObject("ST_DestShortcut");
@@ -1308,9 +1301,6 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
     public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
     {
-        private static readonly FieldInfo ModuleDropDownField =
-            typeof(ResorceRow).GetField("moduleDropDown",
-                BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo ButonDeleteFieldB =
             typeof(ResorceRow).GetField("butonDelete",
                 BindingFlags.NonPublic | BindingFlags.Instance);
@@ -1323,7 +1313,7 @@ namespace SimpleTweaks
             if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
             try
             {
-                var dd = ModuleDropDownField?.GetValue(__instance) as DropDownEnum;
+                var dd = __instance.ResorceDropDownModuleRectTransform?.GetComponent<DropDownEnum>();
                 if (dd?.dropDown != null) dd.dropDown.interactable = false;
                 var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
                 if (del != null) del.interactable = false;
@@ -1514,14 +1504,7 @@ namespace SimpleTweaks
             var hlg = t.GetComponent<HorizontalLayoutGroup>();
             if (hlg != null)
             {
-                // childAlignment is TextAnchor enum — use reflection to avoid
-                // needing UnityEngine.TextRenderingModule reference
-                var prop = typeof(HorizontalLayoutGroup).GetProperty("childAlignment");
-                if (prop != null)
-                {
-                    // TextAnchor.UpperLeft = 0
-                    prop.SetValue(hlg, 0);
-                }
+                hlg.childAlignment = TextAnchor.UpperLeft;
             }
 
             // Recurse
@@ -1674,8 +1657,8 @@ namespace SimpleTweaks
     {
         private static MethodInfo _getCargoCap = AccessTools.Method(
             typeof(SpacecraftType), nameof(SpacecraftType.GetCargoCapacity));
-        private static FieldInfo _fld_planMissionWindow = AccessTools.Field(
-            typeof(PMTab), "planMissionWindow");
+        private static MethodInfo _get_planMissionWindow = AccessTools.PropertyGetter(
+            typeof(PMTab), nameof(PMTab.PlanMissionWindow));
         private static MethodInfo _get_PMMParameter = AccessTools.PropertyGetter(
             typeof(PlanMissionWindow), nameof(PlanMissionWindow.PMMissionParameter));
         private static MethodInfo _get_ScCount = AccessTools.PropertyGetter(
@@ -1688,7 +1671,7 @@ namespace SimpleTweaks
             var countLoaders = new[]
             {
                 new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldfld, _fld_planMissionWindow),
+                new CodeInstruction(OpCodes.Callvirt, _get_planMissionWindow),
                 new CodeInstruction(OpCodes.Callvirt, _get_PMMParameter),
                 new CodeInstruction(OpCodes.Callvirt, _get_ScCount),
             };
@@ -1753,8 +1736,7 @@ namespace SimpleTweaks
             if (!__instance.enabled)
                 return false;
 
-            ObjectInfo bodyInfo = Traverse.Create(__instance)
-                .Field("myTargetObjectInfo").GetValue<ObjectInfo>();
+            ObjectInfo bodyInfo = __instance.MyTargetObjectInfo;
 
             if (bodyInfo == null || !HighlightHoverObject.clickObjectInfo)
                 return true;
@@ -1776,8 +1758,7 @@ namespace SimpleTweaks
             if (!QuickToOrbitIIHelper.IsCtrlPressed())
                 return true; // not Ctrl — let the original method handle it
 
-            ObjectInfo bodyInfo = Traverse.Create(__instance)
-                .Field("myTargetObjectInfo").GetValue<ObjectInfo>();
+            ObjectInfo bodyInfo = __instance.MyTargetObjectInfo;
             if (bodyInfo == null)
                 return true;
 
