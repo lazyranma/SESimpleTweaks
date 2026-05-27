@@ -1587,7 +1587,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Fleet Scale — fixes the "perfect DV" cargo limit and drag-and-drop
+    // Fleet Scales — fixes the "perfect DV" cargo limit and drag-and-drop
     // cargo amounts to account for the number of selected spacecraft (SCCount)
     // instead of always using a single ship's capacity.
     //
@@ -1604,7 +1604,7 @@ namespace SimpleTweaks
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Fleet Scale — multiply every GetFuelCapacity result by SCCount,
+    /// Fleet Scales — multiply every GetFuelCapacity result by SCCount,
     /// fixing the comparison, the cap, and the ignoreLimit path at the source.
     /// Also floors the result at fleet cargo capacity so the binary-search
     /// upper bound in CalculateLoadLimit2ToBeOkayMinFuelCost covers the full
@@ -1649,7 +1649,7 @@ namespace SimpleTweaks
     }
 
     /// <summary>
-    /// Fleet Scale — AddCargoOrbit (drag-and-drop to orbit) uses single-ship
+    /// Fleet Scales — AddCargoOrbit (drag-and-drop to orbit) uses single-ship
     /// cargo capacity without multiplying by SCCount.
     /// </summary>
     [HarmonyPatch(typeof(PMTabCargo), "AddCargoOrbit", new System.Type[] { typeof(ResourceDefinition) })]
@@ -2037,6 +2037,51 @@ namespace SimpleTweaks
             if (MonoBehaviourSingleton<ObjectInfoManager>.InstanceIsNull) return;
             var mgr = MonoBehaviourSingleton<ObjectInfoManager>.Instance;
             Patch_AutoActivateObservatoriesOnAsteroidDestroy.TryOrderSurvey(__instance, mgr);
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Lift Me Off — Fix zero load limit for LowOrbitContainer
+    //
+    // When planning a mission with an orbital payload container spacecraft and
+    // no launch vehicle is selected yet, the game's CalculateLoadLimit2 method
+    // returns 0 because its fallback check (LowOrbitContainer && lvType != null)
+    // fails when lvType is null.  This causes "Max capacity for optimal
+    // transfer" to display 0 T until the user adds cargo manually.
+    //
+    // The fix: when the result is ≤ 0 for a LowOrbitContainer with a null LV,
+    // fall back to the best available LV via LVTypeBest().
+    // ═════════════════════════════════════════════════════════════════════════
+
+    [HarmonyPatch(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
+        new Type[] { typeof(LaunchVehicleType), typeof(double), typeof(double) })]
+    public static class Patch_LiftMeOff
+    {
+        static void Postfix(PMTabSchedule __instance, LaunchVehicleType lvType, double dV1, double dV2, ref double __result)
+        {
+            try
+            {
+                if (lvType != null || __result > 0)
+                    return;
+
+                var pm = __instance.PlanMissionWindow?.PMMissionParameter;
+                if (pm == null) return;
+
+                var sct = pm.SC?.GetTypeSpaceCraft();
+                if (sct == null || !sct.LowOrbitContainer)
+                    return;
+
+                var bestLvType = __instance.PlanMissionWindow?.PMTabSelectLV?.LVTypeBest();
+                if (bestLvType == null) return;
+
+                double fallback = bestLvType.MaxPayloadOnThisObject(pm.Start, pm.FlyCompany);
+                if (fallback > 0)
+                    __result = fallback;
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError($"[LiftMeOff] error: {ex}");
+            }
         }
     }
 }
