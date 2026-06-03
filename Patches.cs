@@ -1613,6 +1613,13 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMMissionParameter), "MaxValueSliderFuelToCalculateLoadLimit2")]
     public static class Patch_FleetScale_FuelCap
     {
+        // Enabled for 0.26.5.x (stable) only — beta compensates at the call site.
+        private static readonly bool IsStable =
+            UnityEngine.Application.version.StartsWith("0.26.5.");
+
+        [HarmonyPrepare]
+        static bool Prepare() => IsStable;
+
         private static MethodInfo _getFuelCap = AccessTools.Method(
             typeof(SpacecraftType), nameof(SpacecraftType.GetFuelCapacity));
         private static MethodInfo _getScCount = AccessTools.PropertyGetter(
@@ -2051,14 +2058,33 @@ namespace SimpleTweaks
     //
     // The fix: when the result is ≤ 0 for a LowOrbitContainer with a null LV,
     // fall back to the best available LV via LVTypeBest().
+    //
+    // Cross-version: TargetMethod() selects the correct overload at runtime.
+    // Stable: 3-arg (lvType, dV1, dV2).  Beta: 4-arg (lvType, dV1, dV2, lvCount).
+    // On stable the Postfix receives lvCount=0 (Harmony default-fills unmatched
+    // Postfix params), and LVTypeBest is called via reflection to handle the
+    // signature change (stable: no args, beta: out int).
     // ═════════════════════════════════════════════════════════════════════════
 
-    [HarmonyPatch(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
-        new Type[] { typeof(LaunchVehicleType), typeof(double), typeof(double) })]
+    [HarmonyPatch(typeof(PMTabSchedule))]
     public static class Patch_LiftMeOff
     {
-        static void Postfix(PMTabSchedule __instance, LaunchVehicleType lvType, double dV1, double dV2, ref double __result)
+        static MethodBase TargetMethod()
         {
+            // Beta: 4-arg (LaunchVehicleType, double, double, int lvCount)
+            var m = AccessTools.Method(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
+                new[] { typeof(LaunchVehicleType), typeof(double), typeof(double), typeof(int) });
+            if (m != null) return m;
+
+            // Stable: 3-arg (LaunchVehicleType, double, double)
+            return AccessTools.Method(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
+                new[] { typeof(LaunchVehicleType), typeof(double), typeof(double) });
+        }
+
+        static void Postfix(PMTabSchedule __instance, LaunchVehicleType lvType, double dV1, double dV2, int lvCount, ref double __result)
+        {
+            // On stable (3-arg method), Harmony fills unmatched Postfix params
+            // with their default value, so lvCount will be 0.
             try
             {
                 if (lvType != null || __result > 0)
@@ -2071,10 +2097,23 @@ namespace SimpleTweaks
                 if (sct == null || !sct.LowOrbitContainer)
                     return;
 
-                var bestLvType = __instance.PlanMissionWindow?.PMTabSelectLV?.LVTypeBest();
+                // LVTypeBest() changed signature in beta (added out int).
+                // Use reflection to call the right overload on either version.
+                var selectLv = __instance.PlanMissionWindow?.PMTabSelectLV;
+                if (selectLv == null) return;
+                var lvTypeBestMethod = AccessTools.Method(typeof(PMTabSelectLV), "LVTypeBest", Type.EmptyTypes)
+                                    ?? AccessTools.Method(typeof(PMTabSelectLV), "LVTypeBest", new[] { typeof(int).MakeByRefType() });
+                if (lvTypeBestMethod == null) return;
+
+                var args = lvTypeBestMethod.GetParameters().Length == 0 ? null : new object[] { 0 };
+                var bestLvType = (LaunchVehicleType)lvTypeBestMethod.Invoke(selectLv, args);
+                // Extract the out-param count from beta's LVTypeBest(out int).
+                int bestLvCount = (args != null) ? (int)args[0] : 1;
+
                 if (bestLvType == null) return;
 
                 double fallback = bestLvType.MaxPayloadOnThisObject(pm.Start, pm.FlyCompany);
+                fallback *= bestLvCount;
                 if (fallback > 0)
                     __result = fallback;
             }
@@ -2084,7 +2123,6 @@ namespace SimpleTweaks
             }
         }
     }
-
     // ═════════════════════════════════════════════════════════════════════════
     // Rapid Scheduled Disassembly
     //

@@ -15,7 +15,6 @@ namespace SimpleTweaks
         private void Awake()
         {
             Log = Logger;
-            Log.LogInfo("SimpleTweaks loaded.");
 
             var harmony = new Harmony("com.simpletweaks");
 
@@ -34,6 +33,8 @@ namespace SimpleTweaks
                     Log.LogDebug($"[SimpleTweaks] {ex}");
                 }
             }
+
+            Log.LogInfo("SimpleTweaks loaded.");
         }
     }
 }
