@@ -34,13 +34,13 @@ using UnityEngine.UI;
 namespace SimpleTweaks
 {
 
-    internal static class TorchIt
+    internal static class TorchCycle
     {
-        // Bit 3 set = Torch mode active. Base bits 0-1 hold Optimal(0) or Fastest(1).
-        public const ETransferType BitTorch = (ETransferType)8;
+        // Bit 3 set = Torch Cycle mode active. Base bits 0-1 hold Optimal(0) or Fastest(1).
+        public const ETransferType BitTorchCycle = (ETransferType)8;
 
         // Returns true if bit 3 is set in the TransferType value.
-        public static bool IsTorchActive(ETransferType et) => ((int)et & (int)BitTorch) != 0;
+        public static bool IsTorchCycleActive(ETransferType et) => ((int)et & (int)BitTorchCycle) != 0;
 
         // Extracts the base transfer type (Optimal=0 or Fastest=1) by masking bit 3.
         public static ETransferType BaseType(ETransferType et) => (ETransferType)((int)et & 3);
@@ -55,13 +55,13 @@ namespace SimpleTweaks
         public static Toggle Checkbox;
         public static TransferToggle TransferToggle;
 
-        // Computes launch date and travel time for torch missions.
+        // Computes launch date and travel time for torch cycle missions.
         // Returns (departure, tmin, tmax) — caller picks Tmin or Tmax.
         // Departure is now + 3d base delay + SC-specific delay.
         // Travel times come from PMTabSchedule.CalculateMinMaxMissionLenght(),
         // which uses the departure date to propagate orbits via CalculateDistance().
         public static (DateTime departure, TimeSpan tmin, TimeSpan tmax)
-            ComputeTorchDates(PMTabSchedule pmTab, PMMissionParameter pmp)
+            ComputeTorchCycleDates(PMTabSchedule pmTab, PMMissionParameter pmp)
         {
             // Minimum departure: now + base delay (3 days) + SC-specific delay.
             var now = MonoBehaviourSingleton<TimeController>.Instance.CurrentTime
@@ -83,12 +83,12 @@ namespace SimpleTweaks
         }
     }
 
-    // ── Create the Torch checkbox on Awake ───────────────────────────
+    // ── Create the Torch Cycle checkbox on Awake ──────────────────────
     // Awake runs once per TransferToggle. We clone whichever radio toggle
     // is currently OFF (cloning ON would fire OnToggleChange). The checkbox
     // is NOT in the ToggleGroup so it doesn't interfere with the radios.
     [HarmonyPatch(typeof(TransferToggle), "Awake")]
-    public static class Patch_TransferToggle_Awake_TorchSetup
+    public static class Patch_TransferToggle_Awake_TorchCycleSetup
     {
         // Cached reflection for the PlanCyclicalMissionWindow field + Toggle fields.
         private static readonly FieldInfo _pcmwField = typeof(TransferToggle).GetField("pcmw", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -103,7 +103,7 @@ namespace SimpleTweaks
         {
             try
             {
-                if (TorchIt.Checkbox != null) return;
+                if (TorchCycle.Checkbox != null) return;
                 var t = __instance.transform;
 
                 // Clone whichever radio toggle is currently OFF.
@@ -144,7 +144,7 @@ namespace SimpleTweaks
                     outer.parent.GetComponent<RectTransform>());
 
                 var torchGo = GameObject.Instantiate(sourceToggle.gameObject, outer);
-                torchGo.name = "ST_TorchToggle";
+                torchGo.name = "ST_TorchCycleToggle";
                 torchGo.transform.SetSiblingIndex(0); // before radio row
 
                 // Give the VLG a minimum height for the checkbox so it doesn't
@@ -162,15 +162,15 @@ namespace SimpleTweaks
                 var torchToggle = torchGo.GetComponent<Toggle>();
                 torchToggle.SetIsOnWithoutNotify(false);
 
-                TorchIt.Checkbox = torchToggle;
-                TorchIt.TransferToggle = __instance;
+                TorchCycle.Checkbox = torchToggle;
+                TorchCycle.TransferToggle = __instance;
                 torchToggle.group = null;
 
                 // The checkbox was just created — sync its checked state to
                 // whatever TransferType the TransferToggle already holds
                 // (may have been set by a prior mission or save load).
                 var currentTT = _transferTypeField.GetValue(__instance);
-                if (TorchIt.IsTorchActive((ETransferType)currentTT))
+                if (TorchCycle.IsTorchCycleActive((ETransferType)currentTT))
                 {
                     torchToggle.SetIsOnWithoutNotify(true);
                 }
@@ -178,10 +178,10 @@ namespace SimpleTweaks
                 // Reuse the vanilla StaticTranslateText component with the game's
                 // key for "CONSTANT ACCELERATION".
                 var stt = torchGo.GetComponentInChildren<Language.StaticTranslateText>();
-                stt.key = TorchIt.LabelKey;
-                stt.translateText.text = LEManager.Get(TorchIt.LabelKey);
+                stt.key = TorchCycle.LabelKey;
+                stt.translateText.text = LEManager.Get(TorchCycle.LabelKey);
 
-                // ── Torch checkbox handler ─────────────────────────────
+                // ── Torch Cycle checkbox handler ────────────────────────
                 torchToggle.onValueChanged.AddListener(_ =>
                 {
                     try
@@ -198,20 +198,20 @@ namespace SimpleTweaks
 
                         if (torchToggle.isOn)
                         {
-                            // ── Torch ENABLED ──────────────────────────
-                            // Combine TorchIt.BitTorch with the current radio value.
-                            var newType = (ETransferType)((int)baseType | (int)TorchIt.BitTorch);
+                            // ── Torch Cycle ENABLED ─────────────────────
+                            // Combine TorchCycle.BitTorchCycle with the current radio value.
+                            var newType = (ETransferType)((int)baseType | (int)TorchCycle.BitTorchCycle);
                             _transferTypeField.SetValue(__instance, newType);
                             pcmw?.CycleMissionsDataData?.TransferType = newType;
 
                             // Switch to constant-acceleration mode.
                             pmp?.SetBurst(false);
 
-                            RecomputeTorchDatesAndUpdateLabels(pmTab, pmp, isFastest);
+                            RecomputeTorchCycleDatesAndUpdateLabels(pmTab, pmp, isFastest);
                         }
                         else
                         {
-                            // ── Torch DISABLED ─────────────────────────
+                            // ── Torch Cycle DISABLED ────────────────────
                             // Revert to vanilla: strip bit 3, restore burst mode.
                             var newType = baseType;
                             _transferTypeField.SetValue(__instance, newType);
@@ -227,62 +227,62 @@ namespace SimpleTweaks
                     }
                     catch (Exception ex)
                     {
-                        Plugin.Log.LogError("[SimpleTweaks] TorchIt checkbox: " + ex);
+                        Plugin.Log.LogError("[SimpleTweaks] TorchCycle checkbox: " + ex);
                     }
                 });
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_TransferToggle_Awake_TorchSetup: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_TransferToggle_Awake_TorchCycleSetup: " + ex);
             }
         }
 
-        // ── Helper: show/hide torch checkbox based on ship eligibility ──
-        // Also handles save-load auto-activation and reverting when torch
+        // ── Helper: show/hide torch cycle checkbox based on ship eligibility ──
+        // Also handles save-load auto-activation and reverting when torch cycle
         // becomes ineligible (e.g. ship or target changed).
         public static void SyncFromMissionData(TransferToggle __instance, PlanCyclicalMissionWindow pcmw)
         {
             try
             {
-                var torchT = TorchIt.Checkbox;
+                var torchT = TorchCycle.Checkbox;
                 if (torchT == null) return;
                 var torchGo = torchT.gameObject;
 
-                // Show torch only when PMMP says constant-acceleration is valid
+                // Show torch cycle only when PMMP says constant-acceleration is valid
                 // (checks SC.ConstanceAcceleration, moon case, orbit case).
                 var canTorch = pcmw?.PMMissionParameter?.CanSetConstanceAcceleration() == true;
                 torchGo.gameObject.SetActive(canTorch);
 
                 // Sync checkbox to the current mission's TransferType.
                 var savedType = (ETransferType)_transferTypeField.GetValue(__instance);
-                var shouldBeOn = TorchIt.IsTorchActive(savedType);
+                var shouldBeOn = TorchCycle.IsTorchCycleActive(savedType);
                 if (shouldBeOn)
                     torchT.isOn = true;
                 else
                     torchT.SetIsOnWithoutNotify(false);
 
-                // If torch became ineligible while enabled (ship/moon-case changed),
+                // If torch cycle became ineligible while enabled (ship/moon-case changed),
                 // turn it off, preserve the Optimal/Fastest radio choice.
-                if (!canTorch && TorchIt.IsTorchActive(savedType))
+                if (!canTorch && TorchCycle.IsTorchCycleActive(savedType))
                 {
-                    _transferTypeField.SetValue(__instance, TorchIt.BaseType(savedType));
+                    _transferTypeField.SetValue(__instance, TorchCycle.BaseType(savedType));
                     var win = _pcmwField.GetValue(__instance) as PlanCyclicalMissionWindow;
                     if (win?.CycleMissionsDataData != null)
-                        win.CycleMissionsDataData.TransferType = TorchIt.BaseType(savedType);
+                        win.CycleMissionsDataData.TransferType = TorchCycle.BaseType(savedType);
                 }
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] TorchIt SyncFromMissionData: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] TorchCycle SyncFromMissionData: " + ex);
             }
         }
 
-        // Shared helper: compute torch dates and update PMLabels.
+        // Shared helper: compute torch cycle dates and update PMLabels.
         // Called by both the checkbox lambda (Awake) and the OnToggleChange prefix.
-        internal static void RecomputeTorchDatesAndUpdateLabels(PMTabSchedule pmTab, PMMissionParameter pmp, bool isFastest)
+        internal static void RecomputeTorchCycleDatesAndUpdateLabels(PMTabSchedule pmTab, PMMissionParameter pmp, bool isFastest)
         {
             if (pmp == null || pmTab == null) return;
-            var (dep, tmin, tmax) = TorchIt.ComputeTorchDates(pmTab, pmp);
+            var (dep, tmin, tmax) = TorchCycle.ComputeTorchCycleDates(pmTab, pmp);
             var travelTime = isFastest ? tmin : tmax;
             pmp.SetTabDateFromPorkchope(dep, dep + travelTime);
             var labels = _pmLabelsField.GetValue(pmTab);
@@ -293,23 +293,23 @@ namespace SimpleTweaks
         }
     }
 
-    // ── Sync torch checkbox state when a mission is bound ────────────
+    // ── Sync torch cycle checkbox state when a mission is bound ───────
     // SetData is called when a TransferToggle is bound to a PlanCyclicalMissionWindow.
-    // We sync the existing Torch checkbox visibility and checked state to the new mission.
+    // We sync the existing Torch Cycle checkbox visibility and checked state to the new mission.
     [HarmonyPatch(typeof(TransferToggle), nameof(TransferToggle.SetData),
         new[] { typeof(PlanCyclicalMissionWindow) })]
-    public static class Patch_TransferToggle_SetData_TorchSync
+    public static class Patch_TransferToggle_SetData_TorchCycleSync
     {
         static void Postfix(TransferToggle __instance, PlanCyclicalMissionWindow _pcmw)
         {
             try
             {
                 if (_pcmw == null) return;
-                Patch_TransferToggle_Awake_TorchSetup.SyncFromMissionData(__instance, _pcmw);
+                Patch_TransferToggle_Awake_TorchCycleSetup.SyncFromMissionData(__instance, _pcmw);
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_TransferToggle_SetData_TorchSync: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_TransferToggle_SetData_TorchCycleSync: " + ex);
             }
         }
     }
@@ -318,13 +318,13 @@ namespace SimpleTweaks
     // The game calls SetToggleInteractable(false) to block the
     // Optimal/Fastest radio buttons. We mirror that to our checkbox.
     [HarmonyPatch(typeof(TransferToggle), nameof(TransferToggle.SetToggleInteractable))]
-    public static class Patch_SetToggleInteractable_TorchIt
+    public static class Patch_SetToggleInteractable_TorchCycle
     {
         static void Postfix(TransferToggle __instance, bool interactable)
         {
             try
             {
-                var torchT = TorchIt.Checkbox;
+                var torchT = TorchCycle.Checkbox;
                 torchT?.interactable = interactable;
             }
             catch (Exception ex)
@@ -336,9 +336,9 @@ namespace SimpleTweaks
 
     // ── Extend TransferType setter to handle bit 3 (8) ───────────────
     // Vanilla setter handles Fastest (check fastest) / else (check optimal).
-    // When bit 3 is set, also check our torch checkbox.
+    // When bit 3 is set, also check our torch cycle checkbox.
     [HarmonyPatch(typeof(TransferToggle), "set_TransferType")]
-    public static class Patch_TransferToggle_SetTransferType_TorchIt
+    public static class Patch_TransferToggle_SetTransferType_TorchCycle
     {
         private static readonly FieldInfo _optimalField = typeof(TransferToggle).GetField("optimal", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo _fastestField = typeof(TransferToggle).GetField("fastest", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -346,37 +346,37 @@ namespace SimpleTweaks
         static void Postfix(TransferToggle __instance, ETransferType value)
         {
             // Only intervene when bit 3 is set.
-            if (!TorchIt.IsTorchActive(value)) return;
+            if (!TorchCycle.IsTorchCycleActive(value)) return;
             try
             {
                 // Correct radios — vanilla setter sees 8/9 ≠ Fastest(1)
                 // and picks Optimal. We correct based on actual base type.
-                var baseType = TorchIt.BaseType(value);
+                var baseType = TorchCycle.BaseType(value);
                 var fastT = _fastestField.GetValue(__instance) as Toggle;
                 var optT = _optimalField.GetValue(__instance) as Toggle;
                 var isFast = baseType == ETransferType.Fastest;
                 fastT.SetIsOnWithoutNotify(isFast);
                 optT.SetIsOnWithoutNotify(!isFast);
 
-                // Sync the torch checkbox (if it exists yet).
-                var torchT = TorchIt.Checkbox;
+                // Sync the torch cycle checkbox (if it exists yet).
+                var torchT = TorchCycle.Checkbox;
                 if (torchT == null) return;
                 torchT.SetIsOnWithoutNotify(true);
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_TransferToggle_SetTransferType_TorchIt: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_TransferToggle_SetTransferType_TorchCycle: " + ex);
             }
         }
     }
 
-    // ── Refresh torch checkbox visibility on schedule tab ────────────
+    // ── Refresh torch cycle checkbox visibility on schedule tab ───────
     // SetData fires when the player navigates to the Schedule tab.
     // Ship or moon-case may have changed since TransferToggle.SetData ran.
     [HarmonyPatch(typeof(ScheduleCycliaclMissionUiElements),
         nameof(ScheduleCycliaclMissionUiElements.SetData),
         new[] { typeof(PlanCyclicalMissionWindow) })]
-    public static class Patch_ScheduleElements_SetData_TorchIt
+    public static class Patch_ScheduleElements_SetData_TorchCycle
     {
         private static readonly FieldInfo _transferToggleField = typeof(ScheduleCycliaclMissionUiElements).GetField("transferToggle", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -389,11 +389,11 @@ namespace SimpleTweaks
                 var tt = _transferToggleField.GetValue(__instance) as TransferToggle;
 
                 // Delegate to the full sync: visibility, checkbox state, ineligibility revert.
-                Patch_TransferToggle_Awake_TorchSetup.SyncFromMissionData(tt, pcmw);
+                Patch_TransferToggle_Awake_TorchCycleSetup.SyncFromMissionData(tt, pcmw);
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_ScheduleElements_SetData_TorchIt: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_ScheduleElements_SetData_TorchCycle: " + ex);
             }
         }
     }
@@ -402,7 +402,7 @@ namespace SimpleTweaks
     // PlanFlyCode runs the porkchop then calls CreateFly().
     // Burst=false ensures ConstanceAcceleration && !Burst → Bezier trajectory.
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.PlanFlyCode))]
-    public static class Patch_PlanFlyCode_TorchIt_SetBurst
+    public static class Patch_PlanFlyCode_TorchCycle_SetBurst
     {
         static void Prefix(PMMissionParameter missionParameter)
         {
@@ -414,24 +414,24 @@ namespace SimpleTweaks
                 // spacecraft's active CycleMissionsData instead.
                 var sc = missionParameter.SC as global::CustomUpdate.Spacecraft;
                 var tt = sc?.CycleMissionsData?.TransferType ?? 0;
-                if (!TorchIt.IsTorchActive((ETransferType)tt)) return;
+                if (!TorchCycle.IsTorchCycleActive((ETransferType)tt)) return;
 
                 missionParameter.SetBurst(false);
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_PlanFlyCode_TorchIt_SetBurst: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_PlanFlyCode_TorchCycle_SetBurst: " + ex);
             }
         }
     }
 
-    // ── Fix torch dates in CreateFly, force Bezier trajectory ────────
+    // ── Fix torch cycle dates in CreateFly, force Bezier trajectory ──
     // CreateFly() uses DepartureTimeDate + TimeSpanMissionLenght set by
     // the porkchop cursor (potentially centuries away). We override with
-    // torch-appropriate dates and force Burst=false to ensure the
+    // torch-cycle-appropriate dates and force Burst=false to ensure the
     // ConstanceAcceleration && !Burst branch → Bezier trajectory.
     [HarmonyPatch(typeof(PMTabSchedule), "CreateFly")]
-    public static class Patch_CreateFly_TorchIt
+    public static class Patch_CreateFly_TorchCycle
     {
         static void Prefix(PMTabSchedule __instance)
         {
@@ -444,16 +444,16 @@ namespace SimpleTweaks
                 // CycleMissionsDataData is null — same reason as PlanFlyCode above.
                 var sc = pmp.SC as global::CustomUpdate.Spacecraft;
                 var tt = sc?.CycleMissionsData?.TransferType ?? 0;
-                if (!TorchIt.IsTorchActive((ETransferType)tt)) return;
+                if (!TorchCycle.IsTorchCycleActive((ETransferType)tt)) return;
 
                 // Force Burst=false — ensures CreateFly takes the Bezier branch.
                 pmp.SetBurst(false);
 
                 // Determine Tmax (Optimal) or Tmin (Fastest) from the bitmask.
-                var isFastest = TorchIt.BaseType((ETransferType)tt) == ETransferType.Fastest;
+                var isFastest = TorchCycle.BaseType((ETransferType)tt) == ETransferType.Fastest;
 
                 // Compute dates using the game's slider formula.
-                var (dep, tmin, tmax) = TorchIt.ComputeTorchDates(__instance, pmp);
+                var (dep, tmin, tmax) = TorchCycle.ComputeTorchCycleDates(__instance, pmp);
                 var travelTime = isFastest ? tmin : tmax;
 
                 // Write the final departure/arrival dates that CreateFly will use.
@@ -461,19 +461,19 @@ namespace SimpleTweaks
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_CreateFly_TorchIt: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_CreateFly_TorchCycle: " + ex);
             }
         }
     }
 
-    // ── OnToggleChange Prefix: block when torch is on ────────────────
+    // ── OnToggleChange Prefix: block when torch cycle is on ───────────
     // Vanilla OnToggleChange sets transferType = Optimal or Fastest (strips
-    // bit 3) and calls ClickOptimal/ClickFastest. When torch is checked,
+    // bit 3) and calls ClickOptimal/ClickFastest. When torch cycle is checked,
     // we block the original and handle the radio switch ourselves:
     // OR bit 3 into TransferType, recompute Tmax↔Tmin, update labels.
-    // When torch is unchecked, let vanilla OnToggleChange run unchanged.
+    // When torch cycle is unchecked, let vanilla OnToggleChange run unchanged.
     [HarmonyPatch(typeof(TransferToggle), "OnToggleChange")]
-    public static class Patch_TransferToggle_OnToggleChange_TorchPrefix
+    public static class Patch_TransferToggle_OnToggleChange_TorchCyclePrefix
     {
         private static readonly FieldInfo _fastField = typeof(TransferToggle).GetField("fastest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo _optField = typeof(TransferToggle).GetField("optimal", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -484,17 +484,17 @@ namespace SimpleTweaks
         {
             try
             {
-                // Check if our torch checkbox is on.
-                var torchT = TorchIt.Checkbox;
-                if (torchT == null || !torchT.isOn) return true; // CA off → vanilla
+                // Check if our torch cycle checkbox is on.
+                var torchT = TorchCycle.Checkbox;
+                if (torchT == null || !torchT.isOn) return true; // Torch Cycle off → vanilla
 
-                // CA on → handle the Optimal↔Fastest switch manually.
+                // Torch Cycle on → handle the Optimal↔Fastest switch manually.
                 // Read which radio was just selected.
                 var fastestOn = _fastField.GetValue(__instance) is Toggle { isOn: true };
 
                 var baseType = fastestOn
                     ? ETransferType.Fastest : ETransferType.Optimal;
-                var newType = (ETransferType)((int)baseType | (int)TorchIt.BitTorch);
+                var newType = (ETransferType)((int)baseType | (int)TorchCycle.BitTorchCycle);
 
                 // Set transferType with bit 3 OR'd in.
                 _ttField.SetValue(__instance, newType);
@@ -505,25 +505,25 @@ namespace SimpleTweaks
                     pcmw.CycleMissionsDataData.TransferType = newType;
 
                 // Recompute dates: Tmax for Optimal, Tmin for Fastest.
-                Patch_TransferToggle_Awake_TorchSetup.RecomputeTorchDatesAndUpdateLabels(
+                Patch_TransferToggle_Awake_TorchCycleSetup.RecomputeTorchCycleDatesAndUpdateLabels(
                     pcmw?.PmTabSchedule, pcmw?.PMMissionParameter, fastestOn);
 
                 return false; // Block original OnToggleChange
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] OnToggleChange TorchPrefix: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] OnToggleChange TorchCyclePrefix: " + ex);
                 return true; // Fall back to vanilla on error
             }
         }
     }
 
-    // ── Block ClickOptimal/ClickFastest when torch is active ─────────
+    // ── Block ClickOptimal/ClickFastest when torch cycle is active ────
     // Both methods reset the porkchop cursor and recompute burst-mode dates,
-    // which would overwrite our torch travel time.
+    // which would overwrite our torch cycle travel time.
     [HarmonyPatch(typeof(PlanCyclicalMissionWindow), "ClickOptimal")]
     [HarmonyPatch(typeof(PlanCyclicalMissionWindow), "ClickFastest")]
-    public static class Patch_BlockClickWhenTorch
+    public static class Patch_BlockClickWhenTorchCycle
     {
         private static readonly FieldInfo _ttField = typeof(TransferToggle).GetField("transferType", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -531,18 +531,18 @@ namespace SimpleTweaks
         {
             try
             {
-                var tt = TorchIt.TransferToggle;
+                var tt = TorchCycle.TransferToggle;
                 if (tt == null) return true;
 
                 var currentType = (ETransferType)_ttField.GetValue(tt);
-                if (TorchIt.IsTorchActive(currentType))
+                if (TorchCycle.IsTorchCycleActive(currentType))
                     return false;
 
                 return true;
             }
             catch (Exception ex)
             {
-                Plugin.Log.LogError("[SimpleTweaks] Patch_BlockClickWhenTorch: " + ex);
+                Plugin.Log.LogError("[SimpleTweaks] Patch_BlockClickWhenTorchCycle: " + ex);
                 return true;
             }
         }

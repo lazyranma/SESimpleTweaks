@@ -22,7 +22,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Keep Scanning** — Idle telescopes and observatories automatically start discovering asteroids when a slot opens up. When all asteroids are discovered, they fall back to surveying resources instead.
 - **Lift Me Off** — Fixes the "Max capacity for optimal transfer" showing 0 T when planning a mission with an orbital payload container and no launch vehicle selected yet.
 - **Rapid Scheduled Disassembly** — Scrap multiple identical spacecraft or launch vehicles at once.
-- **Torch It** — Enable constant-acceleration (torch) mode for cyclical missions.
+- **Torch Cycle** — Enable constant-acceleration (torch) mode for cyclical missions.
 
 ## Installation
 
