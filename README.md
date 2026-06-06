@@ -23,6 +23,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Lift Me Off** — Fixes the "Max capacity for optimal transfer" showing 0 T when planning a mission with an orbital payload container and no launch vehicle selected yet.
 - **Rapid Scheduled Disassembly** — Scrap multiple identical spacecraft or launch vehicles at once.
 - **Torch Cycle** — Enable constant-acceleration (torch) mode for cyclical missions.
+- **Road Closed** — Suppresses the roadmap window pop up on startup.
 
 ## Installation
 
