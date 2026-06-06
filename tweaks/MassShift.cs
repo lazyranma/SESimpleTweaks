@@ -121,7 +121,7 @@ namespace SimpleTweaks
 
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Clear Build Queue: Shift+Click on the X button (upper-right corner of a
+    // Mass Shift: Shift+Click on the X button (upper-right corner of a
     // facility icon in the Object Info list) cancels all facilities of the
     // same type under construction on that body.
     // ─────────────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ namespace SimpleTweaks
         }
     }
 
-    // Clear Build Queue: Shift+Click on the X (cross) button in a Spacecraft or
+    // Mass Shift: Shift+Click on the X (cross) button in a Spacecraft or
     // Launch Vehicle construction queue row cancels all items of the same
     // type (e.g. same ship class) in the construction queue.
     // ─────────────────────────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Clear Build Queue: Shift+Click on the CANCEL BUILDING button in the Spacecraft
+    // Mass Shift: Shift+Click on the CANCEL BUILDING button in the Spacecraft
     // / Launch Vehicle info window cancels all constructions of that exact
     // type (e.g. same ship class, not just SC vs LV) on the body.
     // ─────────────────────────────────────────────────────────────────────────

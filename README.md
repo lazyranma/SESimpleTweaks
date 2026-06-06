@@ -6,24 +6,24 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 
 ## Features
 
-- **Ctrl+Click x100** — Ctrl+Click to add/remove 100 items for all buttons where Shift+Click adds/removes 10: build queue; selecting spacecraft, adding modules to cargo in mission planner.
-- **Module Multi-Removal** — Remove 10 or 100 modules at once from cargo in mission planner.
-- **Clear Build Queue** — Shift+Click the "Cancel Building" button or the X button on a facility/spacecraft row to cancel all items of the same type from the construction queue. Also removes stale duplicate Object Info window.
-- **Deposit Tooltips** — Hover over resource icons in the Object Search list to see the actual info for the largest deposit.
-- **Asteroid Tow** — Display Atlas/Engine requirements for asteroids and comets directly in Object Search.
-- **Quick to Orbit** — Small ↑/↓ button inside the destination field in Plan Mission that selects a body's orbit or a orbit's body.
-- **Quick to Orbit II** — Ctrl+Click on a planet/moon in the quick-access body bar opens that body's orbit info window. Ctrl+Shift+Click opens it in the secondary window. Ctrl+Drop modules/resources/ships there opens mission planner with orbit as destination.
+- **In Control** — Ctrl+Click to add/remove/queue 100 at a time.
+- **Mass Shift** — Shift+Click to cancel construction of all items of the same type.
+- **Mass Shift II** — Allows removing 10/100 modules at once from cargo in mission planner.
+- **Good Tip** — Object Search resource tooltip shows actually useful info.
+- **Asteroid Tow** — Display Atlas/Engine requirements in Object Search.
+- **Quick to Orbit** — ↑/↓ button inside the destination field to select body's orbit or a orbit's body.
+- **Quick to Orbit II** — Ctrl+Click or Ctrl+Drag on the quick-access body bar to target orbit.
 - **Unsticky Crew** — The crew slider is unlocked for all modules.
-- **Space Bin** — Trash bin button in the Object Search list for every asteroid that can be deleted. 
-- **Full Cycle** — Replaces the bare-bones cyclical mission row in the Planet/Orbit view with the full info from the Mission List window with pause/edit/delete buttons.
-- **Leave No Trace** — Eliminates floating-point noise from construction cost discounts by rounding at key arithmetic points, preventing trace amounts from ever appearing.
+- **Space Bin** — Trash bin button in the Object Search list. 
+- **Full Cycle** — Full info on cyclical mission in the Planet/Orbit view.
+- **Leave No Trace** — Eliminate trace amounts of resources left when applying a build discount.
 - **Fleet Scales** — Scales the amount of resources added to cargo at once based on the size of the fleet.
-- **Mass Effect** — Removes negative-mass solid-phase fractions by clamping the liquid phase to the available non-gas budget.
-- **Keep Scanning** — Idle telescopes and observatories automatically start discovering asteroids when a slot opens up. When all asteroids are discovered, they fall back to surveying resources instead.
-- **Lift Me Off** — Fixes the "Max capacity for optimal transfer" showing 0 T when planning a mission with an orbital payload container and no launch vehicle selected yet.
+- **Mass Effect** — Removes negative-mass solid-phase fractions.
+- **Keep Scanning** — Telescopes and observatories will keep scanning for new asteroids and resources.
+- **Lift Me Off** — Lifting cargo from the surface to orbit will not show "Max capacity for optimal transfer" = 0 T.
 - **Rapid Scheduled Disassembly** — Scrap multiple identical spacecraft or launch vehicles at once.
 - **Torch Cycle** — Enable constant-acceleration (torch) mode for cyclical missions.
-- **Road Closed** — Suppresses the roadmap window pop up on startup.
+- **Road Closed** — Suppresses the roadmap window on startup.
 
 ## Installation
 

@@ -69,7 +69,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Ctrl+Click x100: Ctrl+100 in CountToAdd (SC/LV selection +/-).
+    // In Control: Ctrl+100 in CountToAdd (SC/LV selection +/-).
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(CountToAdd), "OnClickAdd")]
     public static class Patch_CountToAdd_OnClickAdd
@@ -86,7 +86,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Ctrl+Click x100: Ctrl+100 for module-cargo + button (ResourcesList).
+    // In Control: Ctrl+100 for module-cargo + button (ResourcesList).
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
     public static class Patch_ResourcesList_OnClickMultiAdd
@@ -96,8 +96,8 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip hint on CountToAdd +/- buttons: localised Ctrl+Click hint appended
-    // to the existing Shift+Click text already shown by the game.
+    // In Control: localised Ctrl+Click hint appended to the existing
+    // Shift+Click text already shown by the game.
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(CountToAdd), "SetData",
         new Type[] { typeof(int), typeof(int), typeof(bool) })]
@@ -120,7 +120,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Ctrl+Click x100: Ctrl+100 facility builds in ObjectInfoWindow.
+    // In Control: Ctrl+100 facility builds in ObjectInfoWindow.
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(ObjectInfoWindow), "FacilityListOnOnClickCreateFacility")]
     public static class Patch_ObjectInfoWindow_FacilityBuildCount
@@ -130,7 +130,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Ctrl+Click x100: Ctrl+100 SC/LV builds in SpaceCraftConstructionWindow.
+    // In Control: Ctrl+100 SC/LV builds in SpaceCraftConstructionWindow.
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "OnClickAccept")]
     public static class Patch_SpaceCraftConstructionWindow_BuildCount

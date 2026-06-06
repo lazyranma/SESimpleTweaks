@@ -59,8 +59,8 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Tooltip on the delete (−) button for module cargo rows, and
-    // Shift+Click / Ctrl+Click support to remove 10 / 100 rows at once.
+    // Mass Shift II: Tooltip on the delete (−) button for module cargo rows,
+    // and Shift+Click / Ctrl+Click support to remove 10 / 100 rows at once.
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(ResorceRow), "SetData",
         new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
