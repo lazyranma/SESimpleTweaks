@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabSchedule))]
     public static class Patch_LiftMeOff
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.LiftMeOff.Value;
+
         static MethodBase TargetMethod()
         {
             // Beta: 4-arg (LaunchVehicleType, double, double, int lvCount)

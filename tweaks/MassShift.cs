@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(FacilityInfoWindow), "OnActionButtonClick")]
     public static class Patch_FacilityInfoWindow_CancelAllBuildings
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static bool Prefix(FacilityInfoWindow __instance)
         {
             try
@@ -91,6 +93,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(FacilityInfoWindow), "SetupButtons")]
     public static class Patch_FacilityInfoWindow_SetupButtons
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static void Postfix(FacilityInfoWindow __instance)
         {
             try
@@ -128,6 +132,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIFacilityList), "CancelBuilding")]
     public static class Patch_UIFacilityList_CancelAllBuildings
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static bool Prefix(UIFacilityList __instance, UIRowFacility element)
         {
             if (!Input.GetKey(KeyCode.LeftShift)) return true;
@@ -167,6 +173,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIFacilityList), "SetData")]
     public static class Patch_UIFacilityList_SetData_Tooltip
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static void Postfix(UIFacilityList __instance)
         {
             try
@@ -197,6 +205,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIRowRocket), "OnCancelBuildClick")]
     public static class Patch_UIRowRocket_CancelAllConstruction
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static bool Prefix(UIRowRocket __instance)
         {
             if (!Input.GetKey(KeyCode.LeftShift)) return true;
@@ -242,6 +252,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIRowRocket), "Awake")]
     public static class Patch_UIRowRocket_Awake_Tooltip
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static void Postfix(UIRowRocket __instance)
         {
             try
@@ -270,6 +282,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SpaceCraftInfoWindow), "OnCancelBuildButtonClick")]
     public static class Patch_SpaceCraftInfoWindow_CancelAllConstruction
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static bool Prefix(SpaceCraftInfoWindow __instance)
         {
             if (!Input.GetKey(KeyCode.LeftShift)) return true;
@@ -315,6 +329,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SpaceCraftInfoWindow), "Awake")]
     public static class Patch_SpaceCraftInfoWindow_Awake_Tooltip
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
+
         static void Postfix(SpaceCraftInfoWindow __instance)
         {
             try

@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SpaceCraftInfoWindow), "OnScrapButtonClick")]
     public static class Patch_SpaceCraftInfoWindow_ScrapMulti
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.RapidScheduledDisassembly.Value;
+
         private static readonly FieldInfo _rowRocketDataField =
             AccessTools.Field(typeof(SpaceCraftInfoWindow), "rowRocketData");
 

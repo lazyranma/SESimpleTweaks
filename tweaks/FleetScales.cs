@@ -41,7 +41,7 @@ namespace SimpleTweaks
             UnityEngine.Application.version.StartsWith("0.26.5.");
 
         [HarmonyPrepare]
-        static bool Prepare() => IsStable;
+        static bool Prepare() => Plugin.FleetScales.Value && IsStable;
 
         private static MethodInfo _getFuelCap = AccessTools.Method(
             typeof(SpacecraftType), nameof(SpacecraftType.GetFuelCapacity));
@@ -85,6 +85,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabCargo), "AddCargoOrbit", new System.Type[] { typeof(ResourceDefinition) })]
     public static class Patch_FleetScale_AddCargoOrbit
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.FleetScales.Value;
+
         private static MethodInfo _getCargoCap = AccessTools.Method(
             typeof(SpacecraftType), nameof(SpacecraftType.GetCargoCapacity));
         private static MethodInfo _get_planMissionWindow = AccessTools.PropertyGetter(

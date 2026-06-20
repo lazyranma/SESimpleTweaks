@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ToolTipManager), nameof(ToolTipManager.ShowToolTip))]
     public static class Patch_ToolTipManager_ShowToolTip
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.GoodTip.Value;
+
         static void Prefix(MonoBehaviourOnDisable _mb, ref string tooltipString)
         {
             try
@@ -147,6 +149,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SearchRow), "Start")]
     public static class Patch_SearchRow_Start
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.GoodTip.Value;
+
         private static readonly FieldInfo MoonsField =
             typeof(SearchRow).GetField("moonsTextMeshPro",
                 BindingFlags.NonPublic | BindingFlags.Instance);

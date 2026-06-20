@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ObjectInfo), nameof(ObjectInfo.VirtualDestroy))]
     public static class Patch_AutoActivateObservatoriesOnAsteroidDestroy
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.KeepScanning.Value;
+
         static void Postfix(ObjectInfo __instance)
         {
             if (__instance.objectTypes != EObjectTypes.Asteroid &&
@@ -128,6 +130,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ObservatoryFacility), "OnObjectDiscovered")]
     public static class Patch_SurveyFallbackAfterDiscoveryComplete
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.KeepScanning.Value;
+
         static void Postfix(ObservatoryFacility __instance)
         {
             if (__instance.WorkMode != ObservatoryFacility.EWorkMode.Idle) return;

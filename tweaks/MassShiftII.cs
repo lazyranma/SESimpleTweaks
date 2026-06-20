@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResorceRow), nameof(ResorceRow.RefreshAddMulti))]
     public static class Patch_ResorceRow_RefreshAddMulti
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShiftII.Value;
+
         private static readonly FieldInfo AddMultiField =
             typeof(ResorceRow).GetField("addMulti", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -66,6 +68,8 @@ namespace SimpleTweaks
         new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
     public static class Patch_ResorceRow_SetData
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShiftII.Value;
+
         private static readonly FieldInfo ButonDeleteField =
             typeof(ResorceRow).GetField("butonDelete", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -93,6 +97,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResorceRow), "OnButtonClickDelete")]
     public static class Patch_ResorceRow_OnButtonClickDelete_Multi
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassShiftII.Value;
+
         private static bool _inMultiDelete = false;
 
         static bool Prefix(ResorceRow __instance)
