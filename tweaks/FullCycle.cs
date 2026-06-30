@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIRowMission), "SetDataRowMissionDataCycleMissionsInfo")]
     public static class Patch_UIRowMission_CyclicRichDisplay
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.FullCycle.Value;
+
         private static MissionRowCyclicalNew _cachedPrefab;
         private static bool _prefabLookedUp;
 
@@ -231,6 +233,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIRowMission), "SetDataRowMissionData")]
     public static class Patch_UIRowMission_AlwaysClean
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.FullCycle.Value;
+
         static void Prefix(UIRowMission __instance)
         {
             try
@@ -250,6 +254,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(MissionRowCyclicalNew), "OnButtonDelete")]
     public static class Patch_MissionRowCyclicalNew_OnButtonDelete_RefreshOIW
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.FullCycle.Value;
+
         static void Postfix(MissionRowCyclicalNew __instance)
         {
             try

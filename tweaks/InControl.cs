@@ -36,6 +36,11 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(LEManager), nameof(LEManager.Get))]
     public static class Patch_LEManager_Get_CustomKeys
     {
+        [HarmonyPrepare]
+        static bool Prepare() =>
+            Plugin.InControl.Value || Plugin.MassShift.Value || Plugin.MassShiftII.Value
+            || Plugin.QuickToOrbit.Value || Plugin.AsteroidTow.Value || Plugin.SpaceBin.Value;
+
         static bool Prefix(string key, ref string __result)
         {
             if (key == null || !key.StartsWith("SimpleTweaks.")) return true;
@@ -49,6 +54,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(TextIntUpDown), "AddClick")]
     public static class Patch_TextIntUpDown_AddClick
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static bool Prefix(TextIntUpDown __instance)
         {
             if (!Input.GetKey(KeyCode.LeftControl)) return true;
@@ -60,6 +67,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(TextIntUpDown), "DownClick")]
     public static class Patch_TextIntUpDown_DownClick
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static bool Prefix(TextIntUpDown __instance)
         {
             if (!Input.GetKey(KeyCode.LeftControl)) return true;
@@ -74,6 +83,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(CountToAdd), "OnClickAdd")]
     public static class Patch_CountToAdd_OnClickAdd
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper), nameof(TranspilerHelper.GetShiftCtrlCount), "CountToAdd.OnClickAdd");
     }
@@ -81,6 +92,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(CountToAdd), "OnClickRemove")]
     public static class Patch_CountToAdd_OnClickRemove
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper), nameof(TranspilerHelper.GetShiftCtrlCount), "CountToAdd.OnClickRemove");
     }
@@ -91,6 +104,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
     public static class Patch_ResourcesList_OnClickMultiAdd
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper), nameof(TranspilerHelper.GetShiftCtrlCount), "ResourcesList.OnClickMultiAdd");
     }
@@ -103,6 +118,8 @@ namespace SimpleTweaks
         new Type[] { typeof(int), typeof(int), typeof(bool) })]
     public static class Patch_CountToAdd_SetData
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static void Postfix(CountToAdd __instance)
         {
             SetCtrlHint(__instance.addTooltip2);
@@ -125,6 +142,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ObjectInfoWindow), "FacilityListOnOnClickCreateFacility")]
     public static class Patch_ObjectInfoWindow_FacilityBuildCount
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper), nameof(TranspilerHelper.GetShiftCtrlCount), "ObjectInfoWindow.FacilityBuildCount");
     }
@@ -135,6 +154,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "OnClickAccept")]
     public static class Patch_SpaceCraftConstructionWindow_BuildCount
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper), nameof(TranspilerHelper.GetShiftCtrlCount), "SpaceCraftConstructionWindow.OnClickAccept");
     }
@@ -146,6 +167,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SpaceCraftConstructionWindow), "Awake")]
     public static class Patch_SpaceCraftConstructionWindow_Awake
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static void Postfix(SpaceCraftConstructionWindow __instance)
         {
             try
@@ -171,6 +194,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ChoseFacilityWindow), "Awake")]
     public static class Patch_ChoseFacilityWindow_Awake
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
         static void Postfix(ChoseFacilityWindow __instance)
         {
             try

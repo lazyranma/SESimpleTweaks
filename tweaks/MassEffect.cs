@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(Data.ScriptableObject.Terraformation.TerraformationConfig.HabitabilityParametersNew), "UpdateDepositStates")]
     public static class Patch_UpdateDepositStates_MassEffect
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.MassEffect.Value;
+
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {

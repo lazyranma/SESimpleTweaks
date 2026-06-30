@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResourcePrice), "op_Multiply", new Type[] { typeof(double), typeof(ResourcePrice) })]
     public static class Patch_ResourcePrice_RoundMultiplier
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.LeaveNoTrace.Value;
+
         static void Prefix(ref double a)
         {
             a = Math.Round(a, 6);
@@ -50,6 +52,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(RowResourcesData), nameof(RowResourcesData.Remove))]
     public static class Patch_RowResourcesData_RoundAfterRemove
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.LeaveNoTrace.Value;
+
         static void Postfix(RowResourcesData __instance)
         {
             __instance.Value = Math.Round(__instance.Value, 6);
@@ -65,6 +69,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(MyExtensions), nameof(MyExtensions.IsNearZero), new Type[] { typeof(double) })]
     public static class Patch_MyExtensions_IsNearZeroThreshold
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.LeaveNoTrace.Value;
+
         static bool Prefix(double value, ref bool __result)
         {
             __result = Math.Abs(value) < 1E-06;

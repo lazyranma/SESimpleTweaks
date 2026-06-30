@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(HighlightHoverObject), "ChangeTarget")]
     public static class Patch_HighlightHoverObject_CtrlClickOrbit
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.QuickToOrbitII.Value;
+
         static bool Prefix(HighlightHoverObject __instance)
         {
             if (!QuickToOrbitIIHelper.IsCtrlPressed())
@@ -61,6 +63,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(HighlightHoverObject), "OnDragAndDrop")]
     public static class Patch_HighlightHoverObject_CtrlDropOrbit
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.QuickToOrbitII.Value;
+
         static bool Prefix(HighlightHoverObject __instance, DragAndDropTransactItem item, ref bool __result)
         {
             if (!QuickToOrbitIIHelper.IsCtrlPressed())

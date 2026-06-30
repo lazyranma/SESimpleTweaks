@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ToolTipManager), nameof(ToolTipManager.ShowToolTip))]
     public static class Patch_ToolTipManager_ShowToolTip
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.GoodTip.Value;
+
         static void Prefix(MonoBehaviourOnDisable _mb, ref string tooltipString)
         {
             try
@@ -147,6 +149,9 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(SearchRow), "Start")]
     public static class Patch_SearchRow_Start
     {
+        [HarmonyPrepare]
+        static bool Prepare() => Plugin.AsteroidTow.Value || Plugin.SpaceBin.Value;
+
         private static readonly FieldInfo MoonsField =
             typeof(SearchRow).GetField("moonsTextMeshPro",
                 BindingFlags.NonPublic | BindingFlags.Instance);
@@ -197,149 +202,162 @@ namespace SimpleTweaks
                 TextMeshProUGUI moonsTmp = MoonsField?.GetValue(__instance) as TextMeshProUGUI;
                 if (moonsTmp == null) return;
 
-                Company player = MonoBehaviourSingleton<GameManager>.Instance.Player;
-                var moonsRT = moonsTmp.rectTransform;
-                bool canDelete = oi.CanPlayerForgotObject();
+                if (Plugin.SpaceBin.Value)
+                    AddTrashButton(oi, moonsTmp);
 
-                // ── Create delete button / spacer ──
-                var delGo = new GameObject(canDelete ? "AsteroidTrashBtn" : "AsteroidTrashSpacer");
-                delGo.transform.SetParent(moonsTmp.transform.parent, false);
-                delGo.transform.SetAsLastSibling();
-
-                var delRT = delGo.AddComponent<RectTransform>();
-                delRT.anchorMin = new Vector2(1f, 0.5f);
-                delRT.anchorMax = new Vector2(1f, 0.5f);
-                delRT.pivot = new Vector2(1f, 0.5f);
-                delRT.sizeDelta = new Vector2(DeleteBtnWidth, DeleteBtnWidth);
-                delRT.anchoredPosition = new Vector2(-2f, 0f);
-
-                if (canDelete)
-                {
-                    var img = delGo.AddComponent<UnityEngine.UI.Image>();
-                    var trashSprite = GetTrashSprite();
-                    if (trashSprite != null) { img.sprite = trashSprite; img.type = UnityEngine.UI.Image.Type.Simple; img.color = Color.white; img.preserveAspect = true; }
-                    else { img.color = new Color(0.15f, 0.15f, 0.15f, 0.7f); }
-
-                    var btn = delGo.AddComponent<UnityEngine.UI.Button>();
-                    btn.targetGraphic = img;
-                    var oiDel = oi;
-                    btn.onClick.AddListener(() =>
-                    {
-                        try
-                        {
-                            if (!oiDel.CanPlayerForgotObject()) return;
-                            SerializedMonoBehaviourSingleton<UIManager>.Instance.ShowPopUP(
-                                LEManager.Get("PopUPOnClickTrashObjectInfo"),
-                                delegate
-                                {
-                                    ObjectInfo parentOI = oiDel.parentObjectInfo;
-                                    ObjectInfoGroups parentGroup = oiDel.parentObjectInfoGropup;
-                                    oiDel.VirtualDestroy();
-                                    var w = SerializedMonoBehaviourSingleton<UIManager>.Instance
-                                        .GetWindow<ObjectInfoWindow>();
-                                    if (w.Open && w.ObjectInfoCurrent == oiDel)
-                                        w.HideImmediately();
-                                    w = SerializedMonoBehaviourSingleton<UIManager>.Instance
-                                        .GetSecondWindow<ObjectInfoWindow>();
-                                    if (w.Open && w.ObjectInfoCurrent == oiDel)
-                                        w.HideImmediately();
-                                    var sow = SerializedMonoBehaviourSingleton<UIManager>.Instance.GetWindow<SearchObjectWindow>();
-                                    if (sow != null) sow.StartCoroutine(ReExpandParent(parentOI, parentGroup));
-                                },
-                                delegate { },
-                                btnOkEnable: true, btnNoEnable: true,
-                                blockerOn: true, yesNoMenu: true);
-                        }
-                        catch (Exception ex)
-                        {
-                            Plugin.Log.LogError("[SimpleTweaks] AsteroidTrashBtn: " + ex);
-                        }
-                    });
-
-                    // Fallback trash icon (only if no sprite found)
-                    if (trashSprite == null)
-                    {
-                        var lblGo = new GameObject("Lbl");
-                        lblGo.transform.SetParent(delGo.transform, false);
-                        var lbl = lblGo.AddComponent<TextMeshProUGUI>();
-                        lbl.font = moonsTmp.font;
-                        lbl.fontSharedMaterial = moonsTmp.fontSharedMaterial;
-                        lbl.fontSize = 12f;
-                        lbl.color = new Color(0.9f, 0.3f, 0.3f, 1f);
-                        lbl.alignment = TextAlignmentOptions.Center;
-                        lbl.enableWordWrapping = false;
-                        lbl.text = "\u2716";
-                        var lblRT = lblGo.GetComponent<RectTransform>();
-                        lblRT.anchorMin = Vector2.zero;
-                        lblRT.anchorMax = Vector2.one;
-                        lblRT.offsetMin = Vector2.zero;
-                        lblRT.offsetMax = Vector2.zero;
-
-                    }
-                    // Tooltip
-                    var tt = delGo.AddComponent<ShowToolTip>();
-                    tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
-                    tt.CustomTextFromCodeRefreshText2 =
-                        () => LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
-                }
-
-                // ── Shift moonsRT left ──
-                moonsRT.anchoredPosition = new Vector2(
-                    moonsRT.anchoredPosition.x - TotalDeleteColumnWidth,
-                    moonsRT.anchoredPosition.y);
-
-                // ── Tow info ──
-                if (!oi.PushableAsteroid2) return;
-
-                var allSc = SerializedMonoBehaviourSingleton<AllScriptableObjectManager>.Instance.AllSpacecraftType;
-                SpacecraftType atlas = allSc.GetByID("spacecraft_asteroid_puller");
-                SpacecraftType engine = allSc.GetByID("Spacecraft_build_asteroid_engine_facilityModule");
-                if (atlas == null || engine == null) return;
-
-                int atlasCount = oi.AsteroidCanBePushHowMuch(player, atlas);
-                int engineCount = oi.AsteroidCanBePushHowMuch(player, engine);
-
-                var towGo = new GameObject("TowRequirements");
-                towGo.transform.SetParent(moonsTmp.transform.parent, false);
-                towGo.transform.SetAsLastSibling();
-
-                var towTmp = towGo.AddComponent<TextMeshProUGUI>();
-                towTmp.font = moonsTmp.font;
-                towTmp.fontSharedMaterial = moonsTmp.fontSharedMaterial;
-                towTmp.fontSize = moonsTmp.fontSize;
-                towTmp.color = moonsTmp.color;
-                towTmp.enableWordWrapping = false;
-                towTmp.alignment = TextAlignmentOptions.MidlineRight;
-                towTmp.text = atlasCount + "A/" + engineCount + "E";
-
-                towTmp.ForceMeshUpdate();
-                float towWidth = Mathf.Ceil(towTmp.preferredWidth) + 4f;
-
-                var towRT = towGo.GetComponent<RectTransform>();
-                towRT.anchorMin = moonsRT.anchorMin;
-                towRT.anchorMax = moonsRT.anchorMax;
-                towRT.pivot = new Vector2(1f, moonsRT.pivot.y);
-                towRT.sizeDelta = new Vector2(towWidth, moonsRT.sizeDelta.y);
-                float edge = moonsRT.anchoredPosition.x + moonsRT.sizeDelta.x * (1f - moonsRT.pivot.x);
-                towRT.anchoredPosition = new Vector2(edge - moonsRT.sizeDelta.x * 0.5f, moonsRT.anchoredPosition.y);
-
-                var oiRef = oi;
-                var atlasRef = atlas;
-                var engineRef = engine;
-                var tt2 = towGo.AddComponent<ShowToolTip>();
-                tt2.CustomTextFromCodeRefreshText2 = () =>
-                {
-                    Company p = MonoBehaviourSingleton<GameManager>.Instance.Player;
-                    int a = oiRef.AsteroidCanBePushHowMuch(p, atlasRef);
-                    int e = oiRef.AsteroidCanBePushHowMuch(p, engineRef);
-                    return LEManager.Get("Tooltip.UIBasicInfoObjectInfoMass")
-                        .MyFormat(a, atlasRef.GetText(), e, engineRef.GetText());
-                };
+                if (Plugin.AsteroidTow.Value && oi.PushableAsteroid2)
+                    AddTowInfo(oi, moonsTmp);
             }
             catch (Exception ex)
             {
                 Plugin.Log.LogError("[SimpleTweaks] Patch_SearchRow_Start: " + ex);
             }
+        }
+
+        // Space Bin: trash button for asteroids/comets in Object Search.
+        private static void AddTrashButton(ObjectInfo oi, TextMeshProUGUI moonsTmp)
+        {
+            var moonsRT = moonsTmp.rectTransform;
+            bool canDelete = oi.CanPlayerForgotObject();
+
+            // ── Create delete button / spacer ──
+            var delGo = new GameObject(canDelete ? "AsteroidTrashBtn" : "AsteroidTrashSpacer");
+            delGo.transform.SetParent(moonsTmp.transform.parent, false);
+            delGo.transform.SetAsLastSibling();
+
+            var delRT = delGo.AddComponent<RectTransform>();
+            delRT.anchorMin = new Vector2(1f, 0.5f);
+            delRT.anchorMax = new Vector2(1f, 0.5f);
+            delRT.pivot = new Vector2(1f, 0.5f);
+            delRT.sizeDelta = new Vector2(DeleteBtnWidth, DeleteBtnWidth);
+            delRT.anchoredPosition = new Vector2(-2f, 0f);
+
+            if (canDelete)
+            {
+                var img = delGo.AddComponent<UnityEngine.UI.Image>();
+                var trashSprite = GetTrashSprite();
+                if (trashSprite != null) { img.sprite = trashSprite; img.type = UnityEngine.UI.Image.Type.Simple; img.color = Color.white; img.preserveAspect = true; }
+                else { img.color = new Color(0.15f, 0.15f, 0.15f, 0.7f); }
+
+                var btn = delGo.AddComponent<UnityEngine.UI.Button>();
+                btn.targetGraphic = img;
+                var oiDel = oi;
+                btn.onClick.AddListener(() =>
+                {
+                    try
+                    {
+                        if (!oiDel.CanPlayerForgotObject()) return;
+                        SerializedMonoBehaviourSingleton<UIManager>.Instance.ShowPopUP(
+                            LEManager.Get("PopUPOnClickTrashObjectInfo"),
+                            delegate
+                            {
+                                ObjectInfo parentOI = oiDel.parentObjectInfo;
+                                ObjectInfoGroups parentGroup = oiDel.parentObjectInfoGropup;
+                                oiDel.VirtualDestroy();
+                                var w = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                                    .GetWindow<ObjectInfoWindow>();
+                                if (w.Open && w.ObjectInfoCurrent == oiDel)
+                                    w.HideImmediately();
+                                w = SerializedMonoBehaviourSingleton<UIManager>.Instance
+                                    .GetSecondWindow<ObjectInfoWindow>();
+                                if (w.Open && w.ObjectInfoCurrent == oiDel)
+                                    w.HideImmediately();
+                                var sow = SerializedMonoBehaviourSingleton<UIManager>.Instance.GetWindow<SearchObjectWindow>();
+                                if (sow != null) sow.StartCoroutine(ReExpandParent(parentOI, parentGroup));
+                            },
+                            delegate { },
+                            btnOkEnable: true, btnNoEnable: true,
+                            blockerOn: true, yesNoMenu: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] AsteroidTrashBtn: " + ex);
+                    }
+                });
+
+                // Fallback trash icon (only if no sprite found)
+                if (trashSprite == null)
+                {
+                    var lblGo = new GameObject("Lbl");
+                    lblGo.transform.SetParent(delGo.transform, false);
+                    var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+                    lbl.font = moonsTmp.font;
+                    lbl.fontSharedMaterial = moonsTmp.fontSharedMaterial;
+                    lbl.fontSize = 12f;
+                    lbl.color = new Color(0.9f, 0.3f, 0.3f, 1f);
+                    lbl.alignment = TextAlignmentOptions.Center;
+                    lbl.enableWordWrapping = false;
+                    lbl.text = "\u2716";
+                    var lblRT = lblGo.GetComponent<RectTransform>();
+                    lblRT.anchorMin = Vector2.zero;
+                    lblRT.anchorMax = Vector2.one;
+                    lblRT.offsetMin = Vector2.zero;
+                    lblRT.offsetMax = Vector2.zero;
+
+                }
+                // Tooltip
+                var tt = delGo.AddComponent<ShowToolTip>();
+                tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
+                tt.CustomTextFromCodeRefreshText2 =
+                    () => LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
+            }
+
+            // ── Shift moonsRT left ──
+            moonsRT.anchoredPosition = new Vector2(
+                moonsRT.anchoredPosition.x - TotalDeleteColumnWidth,
+                moonsRT.anchoredPosition.y);
+        }
+
+        // Asteroid Tow: Atlas/Engine requirements readout in Object Search.
+        private static void AddTowInfo(ObjectInfo oi, TextMeshProUGUI moonsTmp)
+        {
+            Company player = MonoBehaviourSingleton<GameManager>.Instance.Player;
+
+            var allSc = SerializedMonoBehaviourSingleton<AllScriptableObjectManager>.Instance.AllSpacecraftType;
+            SpacecraftType atlas = allSc.GetByID("spacecraft_asteroid_puller");
+            SpacecraftType engine = allSc.GetByID("Spacecraft_build_asteroid_engine_facilityModule");
+            if (atlas == null || engine == null) return;
+
+            int atlasCount = oi.AsteroidCanBePushHowMuch(player, atlas);
+            int engineCount = oi.AsteroidCanBePushHowMuch(player, engine);
+
+            var towGo = new GameObject("TowRequirements");
+            towGo.transform.SetParent(moonsTmp.transform.parent, false);
+            towGo.transform.SetAsLastSibling();
+
+            var towTmp = towGo.AddComponent<TextMeshProUGUI>();
+            towTmp.font = moonsTmp.font;
+            towTmp.fontSharedMaterial = moonsTmp.fontSharedMaterial;
+            towTmp.fontSize = moonsTmp.fontSize;
+            towTmp.color = moonsTmp.color;
+            towTmp.enableWordWrapping = false;
+            towTmp.alignment = TextAlignmentOptions.MidlineRight;
+            towTmp.text = atlasCount + "A/" + engineCount + "E";
+
+            towTmp.ForceMeshUpdate();
+            float towWidth = Mathf.Ceil(towTmp.preferredWidth) + 4f;
+
+            var moonsRT = moonsTmp.rectTransform;
+            var towRT = towGo.GetComponent<RectTransform>();
+            towRT.anchorMin = moonsRT.anchorMin;
+            towRT.anchorMax = moonsRT.anchorMax;
+            towRT.pivot = new Vector2(1f, moonsRT.pivot.y);
+            towRT.sizeDelta = new Vector2(towWidth, moonsRT.sizeDelta.y);
+            float edge = moonsRT.anchoredPosition.x + moonsRT.sizeDelta.x * (1f - moonsRT.pivot.x);
+            towRT.anchoredPosition = new Vector2(edge - moonsRT.sizeDelta.x * 0.5f, moonsRT.anchoredPosition.y);
+
+            var oiRef = oi;
+            var atlasRef = atlas;
+            var engineRef = engine;
+            var tt2 = towGo.AddComponent<ShowToolTip>();
+            tt2.CustomTextFromCodeRefreshText2 = () =>
+            {
+                Company p = MonoBehaviourSingleton<GameManager>.Instance.Player;
+                int a = oiRef.AsteroidCanBePushHowMuch(p, atlasRef);
+                int e = oiRef.AsteroidCanBePushHowMuch(p, engineRef);
+                return LEManager.Get("Tooltip.UIBasicInfoObjectInfoMass")
+                    .MyFormat(a, atlasRef.GetText(), e, engineRef.GetText());
+            };
         }
 
 

@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabDestination), "Awake")]
     public static class Patch_PMTabDestination_DestShortcut
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.QuickToOrbit.Value;
+
         private static readonly FieldInfo DestInputField =
             typeof(PMTabDestination).GetField("destinationInput",
                 BindingFlags.NonPublic | BindingFlags.Instance);
@@ -223,6 +225,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabDestination), "StartInputOnObjectSelect")]
     public static class Patch_PMTabDestination_StartInputOnObjectSelect
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.QuickToOrbit.Value;
+
         static void Postfix(PMTabDestination __instance) =>
             Patch_PMTabDestination_DestShortcut.RefreshForInstance(
                 __instance, "Patch_PMTabDestination_StartInputOnObjectSelect");
@@ -232,6 +236,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabDestination), "ActiveTab")]
     public static class Patch_PMTabDestination_ActiveTab
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.QuickToOrbit.Value;
+
         static void Postfix(PMTabDestination __instance) =>
             Patch_PMTabDestination_DestShortcut.RefreshForInstance(
                 __instance, "Patch_PMTabDestination_ActiveTab");

@@ -36,6 +36,8 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
     public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.UnstickyCrew.Value;
+
         private static readonly FieldInfo ButonDeleteFieldB =
             typeof(ResorceRow).GetField("butonDelete",
                 BindingFlags.NonPublic | BindingFlags.Instance);

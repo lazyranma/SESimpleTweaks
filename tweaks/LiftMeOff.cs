@@ -37,6 +37,8 @@ namespace SimpleTweaks
         new[] { typeof(LaunchVehicleType), typeof(double), typeof(double), typeof(int) })]
     public static class Patch_LiftMeOff
     {
+        [HarmonyPrepare] static bool Prepare() => Plugin.LiftMeOff.Value;
+
         static void Postfix(PMTabSchedule __instance, LaunchVehicleType lvType, double dV1, double dV2, int lvCount, ref double __result)
         {
             try
