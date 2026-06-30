@@ -33,51 +33,6 @@ using UnityEngine.UI;
 
 namespace SimpleTweaks
 {
-    [HarmonyPatch(typeof(PMMissionParameter), "MaxValueSliderFuelToCalculateLoadLimit2")]
-    public static class Patch_FleetScale_FuelCap
-    {
-        // Enabled for 0.26.5.x (stable) only — beta compensates at the call site.
-        private static readonly bool IsStable =
-            UnityEngine.Application.version.StartsWith("0.26.5.");
-
-        [HarmonyPrepare]
-        static bool Prepare() => IsStable;
-
-        private static MethodInfo _getFuelCap = AccessTools.Method(
-            typeof(SpacecraftType), nameof(SpacecraftType.GetFuelCapacity));
-        private static MethodInfo _getScCount = AccessTools.PropertyGetter(
-            typeof(PMMissionParameter), nameof(PMMissionParameter.SCCount));
-
-        [HarmonyTranspiler]
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var codes = new List<CodeInstruction>(instructions);
-            var countLoaders = new[]
-            {
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Call, _getScCount),
-            };
-            FleetScaleTranspiler.Patch(codes, _getFuelCap, countLoaders, skipCount: 0, expectedMin: 3);
-            return codes;
-        }
-
-        [HarmonyPostfix]
-        static void Postfix(PMMissionParameter __instance, ref double __result)
-        {
-            // Floor at fleet cargo capacity so CalculateLoadLimit2ToBeOkayMinFuelCost
-            // searches the full cargo range when fleet cargo > fleet fuel.
-            // Doing this here (rather than transpiling the try-catch method directly)
-            // avoids any risk of our injection being caught and silently returning 0.
-            var sc = __instance.SC;
-            if (sc == null) return;
-            var sct = sc.GetTypeSpaceCraft();
-            if (sct == null) return;
-            double fleetCargoCap = sct.GetCargoCapacity(__instance.FlyCompany) * __instance.SCCount;
-            if (__result < fleetCargoCap)
-                __result = fleetCargoCap;
-        }
-    }
-
     /// <summary>
     /// Fleet Scales — AddCargoOrbit (drag-and-drop to orbit) uses single-ship
     /// cargo capacity without multiplying by SCCount.

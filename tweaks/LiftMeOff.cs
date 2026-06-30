@@ -33,25 +33,12 @@ using UnityEngine.UI;
 
 namespace SimpleTweaks
 {
-    [HarmonyPatch(typeof(PMTabSchedule))]
+    [HarmonyPatch(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
+        new[] { typeof(LaunchVehicleType), typeof(double), typeof(double), typeof(int) })]
     public static class Patch_LiftMeOff
     {
-        static MethodBase TargetMethod()
-        {
-            // Beta: 4-arg (LaunchVehicleType, double, double, int lvCount)
-            var m = AccessTools.Method(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
-                new[] { typeof(LaunchVehicleType), typeof(double), typeof(double), typeof(int) });
-            if (m != null) return m;
-
-            // Stable: 3-arg (LaunchVehicleType, double, double)
-            return AccessTools.Method(typeof(PMTabSchedule), "CalculateLoadLimit2ToBeOkayMinFuelCost",
-                new[] { typeof(LaunchVehicleType), typeof(double), typeof(double) });
-        }
-
         static void Postfix(PMTabSchedule __instance, LaunchVehicleType lvType, double dV1, double dV2, int lvCount, ref double __result)
         {
-            // On stable (3-arg method), Harmony fills unmatched Postfix params
-            // with their default value, so lvCount will be 0.
             try
             {
                 if (lvType != null || __result > 0)
@@ -64,18 +51,9 @@ namespace SimpleTweaks
                 if (sct == null || !sct.LowOrbitContainer)
                     return;
 
-                // LVTypeBest() changed signature in beta (added out int).
-                // Use reflection to call the right overload on either version.
                 var selectLv = __instance.PlanMissionWindow?.PMTabSelectLV;
                 if (selectLv == null) return;
-                var lvTypeBestMethod = AccessTools.Method(typeof(PMTabSelectLV), "LVTypeBest", Type.EmptyTypes)
-                                    ?? AccessTools.Method(typeof(PMTabSelectLV), "LVTypeBest", new[] { typeof(int).MakeByRefType() });
-                if (lvTypeBestMethod == null) return;
-
-                var args = lvTypeBestMethod.GetParameters().Length == 0 ? null : new object[] { 0 };
-                var bestLvType = (LaunchVehicleType)lvTypeBestMethod.Invoke(selectLv, args);
-                // Extract the out-param count from beta's LVTypeBest(out int).
-                int bestLvCount = (args != null) ? (int)args[0] : 1;
+                var bestLvType = selectLv.LVTypeBest(out int bestLvCount);
 
                 if (bestLvType == null) return;
 
