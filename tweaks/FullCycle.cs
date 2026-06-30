@@ -192,14 +192,6 @@ namespace SimpleTweaks
                     richRT.offsetMax = Vector2.zero;
                 }
 
-                // Let the parent row grow taller
-                var le = __instance.GetComponent<UnityEngine.UI.LayoutElement>();
-                if (le == null)
-                    le = __instance.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
-                le.preferredHeight = -1f;
-                le.flexibleHeight = 1f;
-                le.minWidth = -1f;
-
                 return false; // skip original
             }
             catch (Exception ex)
