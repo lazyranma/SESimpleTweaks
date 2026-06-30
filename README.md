@@ -1,6 +1,6 @@
 # Simple Tweaks
 
-**Disclaimer:** This project was generated with LLM assistance.
+**Disclaimer:** This project was created with LLM assistance.
 
 A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of-life features.
 
