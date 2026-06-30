@@ -7,7 +7,7 @@ using HarmonyLib;
 
 namespace SimpleTweaks
 {
-    [BepInPlugin("com.simpletweaks", "Simple Tweaks", VersionConstants.PluginVersion)]
+    [BepInPlugin("com.lazyranma.simpletweaks", "Simple Tweaks", VersionConstants.PluginVersion)]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log;
@@ -16,7 +16,7 @@ namespace SimpleTweaks
         {
             Log = Logger;
 
-            var harmony = new Harmony("com.simpletweaks");
+            var harmony = new Harmony("com.lazyranma.simpletweaks");
 
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
             {
