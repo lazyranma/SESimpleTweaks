@@ -41,4 +41,4 @@ BepInEx\config\com.lazyranma.simpletweaks.cfg
 It contains a single `[SimpleTweaks]` section with one boolean option per feature (for example, `FleetScales = true`), corresponding to the features listed above. All options default to `true` — every tweak is enabled out of the box. Set an option to `false` to turn off that specific tweak, then restart the game for the change to take effect.
 
 ## Download
-Game version: 0.26.6.3.14. v0.6.1 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.6.1/SimpleTweaks_v0.6.1.zip)
+Game version: 0.26.6.3.14. v0.6.2 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.6.2/SimpleTweaks_v0.6.2.zip)
