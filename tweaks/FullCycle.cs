@@ -66,6 +66,31 @@ namespace SimpleTweaks
             typeof(UIList<UIRowMission, RowMissionData>).GetField("maxRows",
                 BindingFlags.NonPublic | BindingFlags.Instance);
 
+        internal static void SetActive(FieldInfo field, UIRowMission instance, bool active)
+        {
+            (field?.GetValue(instance) as Component)?.gameObject.SetActive(active);
+        }
+
+        // Runs on every populate (cyclical or one-time) before the branch routing,
+        // so a pooled row reused for a one-time mission loses any leftover rich child
+        // and gets its hidden vanilla fields back.
+        internal static void CleanRow(UIRowMission instance)
+        {
+            var t = instance.transform;
+            for (int i = t.childCount - 1; i >= 0; i--)
+            {
+                if (t.GetChild(i).name.StartsWith("ST_CyclicRich"))
+                    UnityEngine.Object.Destroy(t.GetChild(i).gameObject);
+            }
+
+            SetActive(IconField, instance, true);
+            SetActive(TitleField, instance, true);
+            SetActive(DescField, instance, true);
+            SetActive(DateField, instance, true);
+            SetActive(CountField, instance, true);
+            SetActive(ButtonField, instance, true);
+        }
+
         private static MissionRowCyclicalNew GetPrefab()
         {
             if (_prefabLookedUp) return _cachedPrefab;
@@ -205,6 +230,26 @@ namespace SimpleTweaks
             // Recurse
             for (int i = 0; i < t.childCount; i++)
                 FixLayoutRecursive(t.GetChild(i));
+        }
+    }
+
+    // Always-clean Prefix on the shared entry point: runs on every UIRowMission
+    // populate (both branches), stripping leaked rich children and restoring the
+    // vanilla fields the cyclical Prefix hides, so pooled-row reuse can't leak.
+    [HarmonyPatch(typeof(UIRowMission), "SetDataRowMissionData")]
+    public static class Patch_UIRowMission_AlwaysClean
+    {
+        static void Prefix(UIRowMission __instance)
+        {
+            try
+            {
+                Patch_UIRowMission_CyclicRichDisplay.CleanRow(__instance);
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError(
+                    "[SimpleTweaks] Patch_UIRowMission_AlwaysClean: " + ex);
+            }
         }
     }
 
