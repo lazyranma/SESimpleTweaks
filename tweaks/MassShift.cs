@@ -113,7 +113,7 @@ namespace SimpleTweaks
                     && currentFacility.Company == MonoBehaviourSingleton<GameManager>.Instance.Player;
 
                 tt.CustomTextFromCodeRefreshText2 = inCancelBuildMode
-                    ? (Func<string>)(() => LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"))
+                    ? (Func<(string, List<(string, string)>, string)>)(() => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"), null, ""))
                     : null;
             }
             catch (Exception ex)
@@ -188,7 +188,7 @@ namespace SimpleTweaks
                         UnityEngine.Object.Destroy(st);
                     var tt = btn.gameObject.AddComponent<ShowToolTip>();
                     tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings");
-                    tt.CustomTextFromCodeRefreshText2 = () => LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings");
+                    tt.CustomTextFromCodeRefreshText2 = () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"), null, "");
                 }
             }
             catch (Exception ex)
@@ -265,7 +265,7 @@ namespace SimpleTweaks
                 var tt = btn.gameObject.GetComponent<ShowToolTip>()
                     ?? btn.gameObject.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
-                tt.CustomTextFromCodeRefreshText2 = () => LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
+                tt.CustomTextFromCodeRefreshText2 = () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"), null, "");
             }
             catch (Exception ex)
             {
@@ -342,7 +342,7 @@ namespace SimpleTweaks
                 var tt = btn.gameObject.GetComponent<ShowToolTip>()
                     ?? btn.gameObject.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
-                tt.CustomTextFromCodeRefreshText2 = () => LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
+                tt.CustomTextFromCodeRefreshText2 = () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"), null, "");
             }
             catch (Exception ex)
             {

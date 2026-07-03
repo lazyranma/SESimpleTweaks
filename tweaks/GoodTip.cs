@@ -299,7 +299,7 @@ namespace SimpleTweaks
                 var tt = delGo.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
                 tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid");
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.DeleteAsteroid"), null, "");
             }
 
             // ── Shift moonsRT left ──
@@ -355,8 +355,8 @@ namespace SimpleTweaks
                 Company p = MonoBehaviourSingleton<GameManager>.Instance.Player;
                 int a = oiRef.AsteroidCanBePushHowMuch(p, atlasRef);
                 int e = oiRef.AsteroidCanBePushHowMuch(p, engineRef);
-                return LEManager.Get("Tooltip.UIBasicInfoObjectInfoMass")
-                    .MyFormat(a, atlasRef.GetText(), e, engineRef.GetText());
+                return (LEManager.Get("Tooltip.UIBasicInfoObjectInfoMass")
+                    .MyFormat(a, atlasRef.GetText(), e, engineRef.GetText()), null, "");
             };
         }
 

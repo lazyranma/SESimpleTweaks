@@ -51,7 +51,7 @@ namespace SimpleTweaks
                 var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
                     ?? addMulti.gameObject.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl");
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl"), null, "");
             }
             catch (Exception ex)
             {
@@ -85,7 +85,7 @@ namespace SimpleTweaks
                 var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
                     ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl");
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl"), null, "");
             }
             catch (Exception ex)
             {

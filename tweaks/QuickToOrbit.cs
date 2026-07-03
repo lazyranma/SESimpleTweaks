@@ -127,12 +127,12 @@ namespace SimpleTweaks
                 tt.CustomTextFromCodeRefreshText2 = () =>
                 {
                     var orig = startRef.ObjectInfo;
-                    if (orig == null) return string.Empty;
+                    if (orig == null) return (string.Empty, null, "");
                     bool fromOrbit = orig.objectTypes == EObjectTypes.Orbit
                                     || orig.objectTypes == EObjectTypes.SolarOrbit;
-                    return LEManager.Get(fromOrbit
+                    return (LEManager.Get(fromOrbit
                         ? "SimpleTweaks.Tooltip.GoToSurface"
-                        : "SimpleTweaks.Tooltip.GoToOrbit");
+                        : "SimpleTweaks.Tooltip.GoToOrbit"), null, "");
                 };
 
                 // ── click ─────────────────────────────────────────────────
