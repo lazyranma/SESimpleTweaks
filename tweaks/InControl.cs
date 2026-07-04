@@ -132,7 +132,7 @@ namespace SimpleTweaks
             string baseText = tt.CustomTextFromCode;
             if (string.IsNullOrEmpty(baseText)) return;
             tt.CustomTextFromCodeRefreshText2 = () =>
-                baseText + "\n<color=grey>" + LEManager.Get("SimpleTweaks.Tooltip.CtrlHint") + "</color>";
+                (baseText + "\n<color=grey>" + LEManager.Get("SimpleTweaks.Tooltip.CtrlHint") + "</color>", null, "");
         }
     }
 
@@ -179,7 +179,7 @@ namespace SimpleTweaks
                 var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
                     ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl");
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl"), null, "");
             }
             catch (Exception ex)
             {
@@ -206,7 +206,7 @@ namespace SimpleTweaks
                 var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
                     ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
                 tt.CustomTextFromCodeRefreshText2 =
-                    () => LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl");
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl"), null, "");
             }
             catch (Exception ex)
             {
