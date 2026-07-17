@@ -40,5 +40,4 @@ BepInEx\config\com.lazyranma.simpletweaks.cfg
 It lists one boolean option per feature, all defaulting to `true` (everything enabled). Set an option to `false` to disable that tweak, then restart the game to apply.
 
 ## Download
-Game version: 0.26.6.3.14. v0.6.2 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.6.2/SimpleTweaks_v0.6.2.zip)\
-Game version: 0.26.7.3.9 (open beta). v0.7.0 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.7.0/SimpleTweaks_v0.7.0.zip)
+Game version: 0.26.7.16.10. v0.7.1 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.7.1/SimpleTweaks_v0.7.1.zip)
