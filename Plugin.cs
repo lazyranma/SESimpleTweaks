@@ -25,7 +25,6 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> FullCycle;
         internal static ConfigEntry<bool> LeaveNoTrace;
         internal static ConfigEntry<bool> FleetScales;
-        internal static ConfigEntry<bool> MassEffect;
         internal static ConfigEntry<bool> KeepScanning;
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RapidScheduledDisassembly;
@@ -60,8 +59,6 @@ namespace SimpleTweaks
                 "Eliminate trace amounts of resources left when applying a build discount.");
             FleetScales = Config.Bind(ConfigSection, "FleetScales", true,
                 "Scales the amount of resources added to cargo at once based on the size of the fleet.");
-            MassEffect = Config.Bind(ConfigSection, "MassEffect", true,
-                "Removes negative-mass solid-phase fractions.");
             KeepScanning = Config.Bind(ConfigSection, "KeepScanning", true,
                 "Telescopes and observatories will keep scanning for new asteroids and resources.");
             LiftMeOff = Config.Bind(ConfigSection, "LiftMeOff", true,
