@@ -14,7 +14,10 @@
     <InformationalVersion>$(PluginVersion)</InformationalVersion>
   </PropertyGroup>
 
-  <PropertyGroup><GameDir Condition="'$(GameDir)' == ''">$(SOLAR_EXPANSE_DIR)</GameDir></PropertyGroup>
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == ''">$(SOLAR_EXPANSE_DIR)</GameDir>
+    <AssemblyCSharpPath Condition="'$(AssemblyCSharpPath)' == ''">$(GameDir)\Solar Expanse_Data\Managed\Assembly-CSharp.dll</AssemblyCSharpPath>
+  </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="BepInEx">
@@ -26,7 +29,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(GameDir)\Solar Expanse_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(AssemblyCSharpPath)</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">

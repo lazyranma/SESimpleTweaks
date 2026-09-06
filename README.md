@@ -20,8 +20,8 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Fleet Scales** — Scales the amount of resources added to cargo at once based on the size of the fleet.
 - **Keep Scanning** — Telescopes and observatories will keep scanning for new asteroids and resources.
 - **Lift Me Off** — Lifting cargo from the surface to orbit will not show "Max capacity for optimal transfer" = 0 T.
-- **Rapid Scheduled Disassembly** — Scrap multiple identical spacecraft or launch vehicles at once.
-- **Torch Cycle** — Enable constant-acceleration (torch) mode for cyclical missions.
+- **Rapid Scheduled Disassembly** — Scrap multiple identical spacecraft or launch vehicles at once. Game version 0.26.7.16.10 only; the open beta includes this feature natively.
+- **Torch Cycle** — Enable constant-acceleration (torch) mode for cyclical missions. Game version 0.26.7.16.10 only; the open beta includes this feature natively.
 - **Road Closed** — Suppresses the roadmap window on startup.
 
 ## Installation
@@ -40,4 +40,4 @@ BepInEx\config\com.lazyranma.simpletweaks.cfg
 It lists one boolean option per feature, all defaulting to `true` (everything enabled). Set an option to `false` to disable that tweak, then restart the game to apply.
 
 ## Download
-Game version: 0.26.7.16.10. v0.7.1 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.7.1/SimpleTweaks_v0.7.1.zip)
+Game version: 0.26.7.16.10 / 0.26.9.3.9 BETA. v0.7.1 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.7.1/SimpleTweaks_v0.7.1.zip)

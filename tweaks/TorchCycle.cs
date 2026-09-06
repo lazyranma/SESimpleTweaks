@@ -90,7 +90,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(TransferToggle), "Awake")]
     public static class Patch_TransferToggle_Awake_TorchCycleSetup
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         // Cached reflection for the PlanCyclicalMissionWindow field + Toggle fields.
         private static readonly FieldInfo _pcmwField = typeof(TransferToggle).GetField("pcmw", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -302,7 +302,7 @@ namespace SimpleTweaks
         new[] { typeof(PlanCyclicalMissionWindow) })]
     public static class Patch_TransferToggle_SetData_TorchCycleSync
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         static void Postfix(TransferToggle __instance, PlanCyclicalMissionWindow _pcmw)
         {
@@ -324,7 +324,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(TransferToggle), nameof(TransferToggle.SetToggleInteractable))]
     public static class Patch_SetToggleInteractable_TorchCycle
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         static void Postfix(TransferToggle __instance, bool interactable)
         {
@@ -346,7 +346,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(TransferToggle), "set_TransferType")]
     public static class Patch_TransferToggle_SetTransferType_TorchCycle
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         private static readonly FieldInfo _optimalField = typeof(TransferToggle).GetField("optimal", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo _fastestField = typeof(TransferToggle).GetField("fastest", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -386,7 +386,7 @@ namespace SimpleTweaks
         new[] { typeof(PlanCyclicalMissionWindow) })]
     public static class Patch_ScheduleElements_SetData_TorchCycle
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         private static readonly FieldInfo _transferToggleField = typeof(ScheduleCycliaclMissionUiElements).GetField("transferToggle", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -414,7 +414,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.PlanFlyCode))]
     public static class Patch_PlanFlyCode_TorchCycle_SetBurst
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         static void Prefix(PMMissionParameter missionParameter)
         {
@@ -445,7 +445,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabSchedule), "CreateFly")]
     public static class Patch_CreateFly_TorchCycle
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         static void Prefix(PMTabSchedule __instance)
         {
@@ -489,7 +489,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(TransferToggle), "OnToggleChange")]
     public static class Patch_TransferToggle_OnToggleChange_TorchCyclePrefix
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         private static readonly FieldInfo _fastField = typeof(TransferToggle).GetField("fastest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo _optField = typeof(TransferToggle).GetField("optimal", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -541,7 +541,7 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PlanCyclicalMissionWindow), "ClickFastest")]
     public static class Patch_BlockClickWhenTorchCycle
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.TorchCycle.Value;
+        [HarmonyPrepare] static bool Prepare() => Plugin.IsStableGame && Plugin.TorchCycle.Value;
 
         private static readonly FieldInfo _ttField = typeof(TransferToggle).GetField("transferType", BindingFlags.NonPublic | BindingFlags.Instance);
 

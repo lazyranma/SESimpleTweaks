@@ -13,6 +13,12 @@ namespace SimpleTweaks
     {
         internal static ManualLogSource Log;
 
+        private const string StableGameVersionPrefix = "0.26.7.";
+
+        internal static bool IsStableGame =>
+            UnityEngine.Application.version.StartsWith(StableGameVersionPrefix);
+        internal static bool IsBetaGame => !IsStableGame;
+
         internal static ConfigEntry<bool> InControl;
         internal static ConfigEntry<bool> MassShift;
         internal static ConfigEntry<bool> MassShiftII;
@@ -95,7 +101,8 @@ namespace SimpleTweaks
                 }
             }
 
-            Log.LogInfo("SimpleTweaks loaded.");
+            string gameChannel = IsStableGame ? "stable" : "beta";
+            Log.LogInfo($"SimpleTweaks loaded for game version {UnityEngine.Application.version} ({gameChannel}).");
         }
     }
 }

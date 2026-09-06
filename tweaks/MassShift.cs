@@ -33,7 +33,7 @@ using UnityEngine.UI;
 
 namespace SimpleTweaks
 {
-    [HarmonyPatch(typeof(FacilityInfoWindow), "OnActionButtonClick")]
+    [HarmonyPatch(typeof(FacilityInfoWindow), "OnActionButtonClick", new Type[] { })]
     public static class Patch_FacilityInfoWindow_CancelAllBuildings
     {
         [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
