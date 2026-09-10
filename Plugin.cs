@@ -13,12 +13,6 @@ namespace SimpleTweaks
     {
         internal static ManualLogSource Log;
 
-        private const string StableGameVersionPrefix = "0.26.7.";
-
-        internal static bool IsStableGame =>
-            UnityEngine.Application.version.StartsWith(StableGameVersionPrefix);
-        internal static bool IsBetaGame => !IsStableGame;
-
         internal static ConfigEntry<bool> InControl;
         internal static ConfigEntry<bool> MassShift;
         internal static ConfigEntry<bool> MassShiftII;
@@ -33,8 +27,6 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> FleetScales;
         internal static ConfigEntry<bool> KeepScanning;
         internal static ConfigEntry<bool> LiftMeOff;
-        internal static ConfigEntry<bool> RapidScheduledDisassembly;
-        internal static ConfigEntry<bool> TorchCycle;
         internal static ConfigEntry<bool> RoadClosed;
 
         private const string ConfigSection = "SimpleTweaks";
@@ -69,10 +61,6 @@ namespace SimpleTweaks
                 "Telescopes and observatories will keep scanning for new asteroids and resources.");
             LiftMeOff = Config.Bind(ConfigSection, "LiftMeOff", true,
                 "Lifting cargo from the surface to orbit will not show \"Max capacity for optimal transfer\" = 0 T.");
-            RapidScheduledDisassembly = Config.Bind(ConfigSection, "RapidScheduledDisassembly", true,
-                "Scrap multiple identical spacecraft or launch vehicles at once.");
-            TorchCycle = Config.Bind(ConfigSection, "TorchCycle", true,
-                "Enable constant-acceleration (torch) mode for cyclical missions.");
             RoadClosed = Config.Bind(ConfigSection, "RoadClosed", true,
                 "Suppresses the roadmap window on startup.");
         }
@@ -101,8 +89,7 @@ namespace SimpleTweaks
                 }
             }
 
-            string gameChannel = IsStableGame ? "stable" : "beta";
-            Log.LogInfo($"SimpleTweaks loaded for game version {UnityEngine.Application.version} ({gameChannel}).");
+            Log.LogInfo($"SimpleTweaks loaded.");
         }
     }
 }

@@ -159,22 +159,11 @@ namespace SimpleTweaks
         private const float DeleteBtnWidth = 20f;
         private const float DeleteBtnGap = 4f;
         private const float TotalDeleteColumnWidth = DeleteBtnWidth + DeleteBtnGap;
-        private static readonly MethodInfo ExpandSearchRowMethod = ResolveExpandSearchRowMethod();
+        private static readonly MethodInfo ExpandSearchRowMethod =
+            typeof(SearchRow).GetMethod("ExpandUnexpand", new[] { typeof(bool), typeof(bool) })
+            ?? throw new MissingMethodException(typeof(SearchRow).FullName, "ExpandUnexpand");
         private static Sprite _trashSprite;
         private static bool _trashSpriteLookedUp;
-
-        private static MethodInfo ResolveExpandSearchRowMethod()
-        {
-            if (Plugin.IsStableGame)
-            {
-                return typeof(SearchRow).GetMethod("Expand", Type.EmptyTypes)
-                    ?? throw new MissingMethodException(typeof(SearchRow).FullName, "Expand");
-            }
-
-            return typeof(SearchRow).GetMethod("ExpandUnexpand",
-                       new[] { typeof(bool), typeof(bool) })
-                ?? throw new MissingMethodException(typeof(SearchRow).FullName, "ExpandUnexpand");
-        }
 
         private static Sprite GetTrashSprite()
         {
@@ -390,10 +379,7 @@ namespace SimpleTweaks
                 parentRow = window.FindSearchRow(parentGroup);
             if (parentRow != null && !parentRow.IsExpand)
             {
-                object[] args = Plugin.IsBetaGame
-                    ? new object[] { true, false }
-                    : null;
-                ExpandSearchRowMethod.Invoke(parentRow, args);
+                ExpandSearchRowMethod.Invoke(parentRow, new object[] { true, false });
             }
         }
     }

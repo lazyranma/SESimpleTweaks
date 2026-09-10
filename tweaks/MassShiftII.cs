@@ -94,60 +94,14 @@ namespace SimpleTweaks
         }
     }
 
-    [HarmonyPatch(typeof(ResorceRow), "OnButtonClickDelete")]
-    public static class Patch_ResorceRow_OnButtonClickDelete_Multi
+    [HarmonyPatch(typeof(ResourcesList), nameof(ResourcesList.OnClickMultiRemove),
+        new[] { typeof(SpaceModuleDescriptor), typeof(int) })]
+    public static class Patch_ResourcesList_OnClickMultiRemove
     {
         [HarmonyPrepare] static bool Prepare() => Plugin.MassShiftII.Value;
 
-        private static bool _inMultiDelete = false;
-
-        static bool Prefix(ResorceRow __instance)
-        {
-            if (_inMultiDelete) return true;
-            if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.LeftControl))
-                return true;
-
-            try
-            {
-                if (__instance.CargoResourceTypeType() != EResourceTypeType.modules)
-                    return true;
-            }
-            catch { return true; }
-
-            SpaceModuleDescriptor ft = __instance.FacilityType();
-            if (ft == null) return true;
-
-            var rList = Traverse.Create(__instance).Field("resourcesListParent")
-                .GetValue<ResourcesList>();
-            if (rList == null) return true;
-
-            // count-1 additional deletes (the original delete handles __instance itself)
-            int extra = (Input.GetKey(KeyCode.LeftControl) ? 100 : 10) - 1;
-
-            _inMultiDelete = true;
-            try
-            {
-                for (int i = 0; i < extra; i++)
-                {
-                    // Re-query each iteration: the list shrinks as rows are deleted
-                    ResorceRow next = null;
-                    foreach (var r in rList.listResorces)
-                    {
-                        if (r == __instance) continue;
-                        SpaceModuleDescriptor rft = null;
-                        try { rft = r.FacilityType(); } catch { continue; }
-                        if (rft == ft) { next = r; break; }
-                    }
-                    if (next == null) break;
-                    next.OnButtonClickDeletePublic();
-                }
-            }
-            finally
-            {
-                _inMultiDelete = false;
-            }
-
-            return true; // let original handle __instance
-        }
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper),
+                nameof(TranspilerHelper.GetShiftCtrlCount), "ResourcesList.OnClickMultiRemove");
     }
 }

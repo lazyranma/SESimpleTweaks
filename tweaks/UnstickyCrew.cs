@@ -44,6 +44,10 @@ namespace SimpleTweaks
         private static readonly FieldInfo AddMultiFieldB =
             typeof(ResorceRow).GetField("addMulti",
                 BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo ButonDeleteToolTipField =
+            typeof(ResorceRow).GetField("butonDeleteToolTip",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new MissingFieldException(typeof(ResorceRow).FullName, "butonDeleteToolTip");
 
         static bool Prefix(ResorceRow __instance)
         {
@@ -54,6 +58,8 @@ namespace SimpleTweaks
                 if (dd?.dropDown != null) dd.dropDown.interactable = false;
                 var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
                 if (del != null) del.interactable = false;
+                var deleteToolTip = (ShowToolTip)ButonDeleteToolTipField.GetValue(__instance);
+                if (deleteToolTip != null) deleteToolTip.enabled = false;
                 var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
                 if (am != null) am.gameObject.SetActive(false);
                 return false; // skip original (which would also lock the crew slider)

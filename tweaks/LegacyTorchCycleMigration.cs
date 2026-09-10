@@ -13,9 +13,6 @@ namespace SimpleTweaks
     {
         private const int LegacyTorchCycleBit = 8;
 
-        [HarmonyPrepare]
-        static bool Prepare() => Plugin.IsBetaGame;
-
         static void Prefix(CycleMissionManager.PMMissionParameterCyclicalDataSave data)
         {
             int transferType = (int)data.TransferType;
