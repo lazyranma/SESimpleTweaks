@@ -78,7 +78,7 @@ namespace SimpleTweaks
 
                     if (freeSlots > 0)
                     {
-                        if (obs.OrderDiscovery(null, true))
+                        if (obs.OrderDiscovery(null))
                             freeSlots--;
                     }
                     else
@@ -118,7 +118,7 @@ namespace SimpleTweaks
             if (_findNextTargetRecurrently == null) return false;
             var args = new object[] { (object)mgr.mainObjectInfoSun, null, null, true };
             if ((bool)_findNextTargetRecurrently.Invoke(obs, args))
-                return obs.OrderExploration((ObjectInfo)args[2], true);
+                return obs.OrderExploration((ObjectInfo)args[2]);
             return false;
         }
     }

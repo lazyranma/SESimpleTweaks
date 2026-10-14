@@ -46,14 +46,23 @@ namespace SimpleTweaks
                 if (lvType != null || __result > 0)
                     return;
 
-                var pm = __instance.PlanMissionWindow?.PMMissionParameter;
-                if (pm == null) return;
+                var window = __instance.PlanMissionWindow;
+                if (window == null || window.startClearVariable) return;
+
+                var pm = window.PMMissionParameter;
+                if (pm == null || pm.Start == null || pm.Target == null) return;
+
+                // Orbit-origin limits are authoritative in the beta; only repair a surface lift.
+                if (pm.Start.objectTypes == EObjectTypes.Orbit ||
+                    pm.Target.objectTypes != EObjectTypes.Orbit ||
+                    pm.Target.ParentObjectInfo != pm.Start)
+                    return;
 
                 var sct = pm.SC?.GetTypeSpaceCraft();
                 if (sct == null || !sct.LowOrbitContainer)
                     return;
 
-                var selectLv = __instance.PlanMissionWindow?.PMTabSelectLV;
+                var selectLv = window.PMTabSelectLV;
                 if (selectLv == null) return;
                 var bestLvType = selectLv.LVTypeBest(out int bestLvCount);
 

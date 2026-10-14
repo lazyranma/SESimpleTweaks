@@ -19,7 +19,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Leave No Trace** — Eliminate trace amounts of resources left when applying a build discount.
 - **Fleet Scales** — Scales the amount of resources added to cargo at once based on the size of the fleet.
 - **Keep Scanning** — Telescopes and observatories will keep scanning for new asteroids and resources.
-- **Lift Me Off** — Lifting cargo from the surface to orbit will not show "Max capacity for optimal transfer" = 0 T.
+- **Lift Me Off** — Lifting cargo from the surface to its own orbit will not show "Max capacity for optimal transfer" = 0 T.
 - **Road Closed** — Suppresses the roadmap window on startup.
 
 ## Installation
