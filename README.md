@@ -23,6 +23,11 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 
 ## Installation
 
+### Nexus Mods
+[Simple Tweaks on Nexus Mods](https://www.nexusmods.com/solarexpanse/mods/28).
+
+### Manual
+
 1. **Install BepInEx** — Follow the [BepInEx setup guide](https://docs.bepinex.dev/articles/user_guide/installation/index.html) for Solar Expanse.
 2. **Extract plugin** — Unzip `SimpleTweaks.zip` into `BepInEx\plugins\`.
 

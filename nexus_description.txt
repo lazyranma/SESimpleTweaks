@@ -1,0 +1,26 @@
+A collection of convenient UI tweaks and quality-of-life features.
+
+[url=https://github.com/lazyranma/SESimpleTweaks]GitHub[/url] | [url=https://discord.com/channels/1278330334982967468/1503836644338307102]Discord[/url]
+
+[size=4]Features[/size]
+[list]
+[*][b]In Control[/b] — Ctrl+Click to add, remove, or queue 100 at a time (module cargo +/−, SC/LV counts, facility builds, SC/LV construction, number fields).[/*]
+[*][b]Mass Shift[/b] — Shift+Click to cancel construction of all items of the same type.[/*]
+[*][b]Good Tip[/b] — Object Search resource tooltips show useful information.[/*]
+[*][b]Asteroid Tow[/b] — Display Atlas and engine requirements in Object Search.[/*]
+[*][b]Quick to Orbit[/b] — Use the buttons inside the destination field to select a body's orbit or the body at an orbit.[/*]
+[*][b]Quick to Orbit II[/b] — Ctrl+Click or Ctrl+Drag on the quick-access body bar to target an orbit.[/*]
+[*][b]Unsticky Crew[/b] — Unlock the crew slider for all modules.[/*]
+[*][b]Space Bin[/b] — Add a trash bin button to the Object Search list.[/*]
+[*][b]Full Cycle[/b] — Show complete information for cyclical missions in the Planet/Orbit view.[/*]
+[*][b]Leave No Trace[/b] — Eliminate trace amounts of resources left when applying a build discount.[/*]
+[*][b]Fleet Scales[/b] — Scale the amount of resources added to cargo based on fleet size.[/*]
+[*][b]Keep Scanning[/b] — Telescopes and observatories continue scanning for new asteroids and resources.[/*]
+[*][b]Lift Me Off[/b] — Prevent the “Max capacity for optimal transfer” value from incorrectly displaying 0 T when lifting cargo from the surface to its own orbit.[/*]
+[*][b]Road Closed[/b] — Suppress the roadmap window on startup.[/*]
+[/list]
+
+[size=4]Configuration[/size]
+Each feature can be toggled on or off individually. The configuration file is created automatically on first launch at: 
+[code]BepInEx\config\com.lazyranma.simpletweaks.cfg[/code]
+The file contains one Boolean option per feature, with all options enabled by default. Set an option to [b]false[/b] to disable that tweak, then restart the game to apply the change.

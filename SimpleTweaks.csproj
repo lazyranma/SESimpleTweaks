@@ -77,12 +77,23 @@
   <Target Name="PackRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <PropertyGroup>
       <_StageRoot>$(IntermediateOutputPath)zipstage\</_StageRoot>
+      <_NexusStageRoot>$(IntermediateOutputPath)nexusstage\</_NexusStageRoot>
     </PropertyGroup>
+
+    <!-- GitHub release archive: bare plugin folder. -->
     <RemoveDir Directories="$(_StageRoot)" />
     <MakeDir Directories="$(_StageRoot)SimpleTweaks\" />
     <Copy SourceFiles="$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(_StageRoot)SimpleTweaks\" />
     <ZipDirectory SourceDirectory="$(_StageRoot)" DestinationFile="$(OutputPath)SimpleTweaks_v$(PluginVersion).zip" Overwrite="true" />
     <RemoveDir Directories="$(_StageRoot)" />
+
+    <!-- Nexus Mods archive: paths relative to the game root, so it unpacks
+         straight into the game folder. -->
+    <RemoveDir Directories="$(_NexusStageRoot)" />
+    <MakeDir Directories="$(_NexusStageRoot)BepInEx\plugins\SimpleTweaks\" />
+    <Copy SourceFiles="$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(_NexusStageRoot)BepInEx\plugins\SimpleTweaks\" />
+    <ZipDirectory SourceDirectory="$(_NexusStageRoot)" DestinationFile="$(OutputPath)SimpleTweaks-$(PluginVersion).zip" Overwrite="true" />
+    <RemoveDir Directories="$(_NexusStageRoot)" />
 
     <MakeDir Directories="$(GameDir)\BepInEx\plugins\SimpleTweaks\" />
     <Copy SourceFiles="$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(GameDir)\BepInEx\plugins\SimpleTweaks\" Retries="0" ContinueOnError="true" />
