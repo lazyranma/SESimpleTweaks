@@ -15,7 +15,6 @@ namespace SimpleTweaks
 
         internal static ConfigEntry<bool> InControl;
         internal static ConfigEntry<bool> MassShift;
-        internal static ConfigEntry<bool> MassShiftII;
         internal static ConfigEntry<bool> GoodTip;
         internal static ConfigEntry<bool> AsteroidTow;
         internal static ConfigEntry<bool> QuickToOrbit;
@@ -34,11 +33,10 @@ namespace SimpleTweaks
         private void BindConfig()
         {
             InControl = Config.Bind(ConfigSection, "InControl", true,
-                "Ctrl+Click to add/remove/queue 100 at a time.");
+                "Ctrl+Click to add/remove/queue 100 at a time "
+                + "(module cargo +/-, SC/LV counts, facility builds, SC/LV construction, number fields).");
             MassShift = Config.Bind(ConfigSection, "MassShift", true,
                 "Shift+Click to cancel construction of all items of the same type.");
-            MassShiftII = Config.Bind(ConfigSection, "MassShiftII", true,
-                "Allows removing 10/100 modules at once from cargo in mission planner.");
             GoodTip = Config.Bind(ConfigSection, "GoodTip", true,
                 "Object Search resource tooltip shows actually useful info.");
             AsteroidTow = Config.Bind(ConfigSection, "AsteroidTow", true,

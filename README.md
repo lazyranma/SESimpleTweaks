@@ -6,9 +6,8 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 
 ## Features
 
-- **In Control** — Ctrl+Click to add/remove/queue 100 at a time.
+- **In Control** — Ctrl+Click to add/remove/queue 100 at a time (module cargo +/−, SC/LV counts, facility builds, SC/LV construction, number fields).
 - **Mass Shift** — Shift+Click to cancel construction of all items of the same type.
-- **Mass Shift II** — Allows removing 10/100 modules at once from cargo in mission planner.
 - **Good Tip** — Object Search resource tooltip shows actually useful info.
 - **Asteroid Tow** — Display Atlas/Engine requirements in Object Search.
 - **Quick to Orbit** — ↑/↓ button inside the destination field to select body's orbit or a orbit's body.

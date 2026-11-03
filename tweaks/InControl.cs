@@ -38,7 +38,7 @@ namespace SimpleTweaks
     {
         [HarmonyPrepare]
         static bool Prepare() =>
-            Plugin.InControl.Value || Plugin.MassShift.Value || Plugin.MassShiftII.Value
+            Plugin.InControl.Value || Plugin.MassShift.Value
             || Plugin.QuickToOrbit.Value || Plugin.AsteroidTow.Value || Plugin.SpaceBin.Value;
 
         static bool Prefix(string key, ref string __result)
@@ -99,7 +99,7 @@ namespace SimpleTweaks
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // In Control: Ctrl+100 for module-cargo + button (ResourcesList).
+    // In Control: Ctrl+100 for module-cargo + / − buttons (ResourcesList).
     // ─────────────────────────────────────────────────────────────────────────
     [HarmonyPatch(typeof(ResourcesList), "OnClickMultiAdd")]
     public static class Patch_ResourcesList_OnClickMultiAdd
@@ -108,6 +108,78 @@ namespace SimpleTweaks
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper), nameof(TranspilerHelper.GetShiftCtrlCount), "ResourcesList.OnClickMultiAdd");
+    }
+
+    [HarmonyPatch(typeof(ResourcesList), nameof(ResourcesList.OnClickMultiRemove),
+        new[] { typeof(SpaceModuleDescriptor), typeof(int) })]
+    public static class Patch_ResourcesList_OnClickMultiRemove
+    {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            => TranspilerHelper.PatchShiftPlusTen(instructions, typeof(TranspilerHelper),
+                nameof(TranspilerHelper.GetShiftCtrlCount), "ResourcesList.OnClickMultiRemove");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // In Control: Ctrl+Click hint in the module-cargo row tooltips. Vanilla
+    // labels both buttons with Shift+Click only, so append the Ctrl variant.
+    // ─────────────────────────────────────────────────────────────────────────
+    [HarmonyPatch(typeof(ResorceRow), nameof(ResorceRow.RefreshAddMulti))]
+    public static class Patch_ResorceRow_RefreshAddMulti
+    {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
+        private static readonly FieldInfo AddMultiField =
+            typeof(ResorceRow).GetField("addMulti", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        static void Postfix(ResorceRow __instance)
+        {
+            try
+            {
+                var addMulti = AddMultiField?.GetValue(__instance) as UnityEngine.UI.Button;
+                if (addMulti == null || !addMulti.gameObject.activeSelf) return;
+
+                var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
+                    ?? addMulti.gameObject.AddComponent<ShowToolTip>();
+                tt.CustomTextFromCodeRefreshText2 =
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl"), null, "");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_RefreshAddMulti: " + ex);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(ResorceRow), "SetData",
+        new Type[] { typeof(Cargo), typeof(float), typeof(ResourcesList), typeof(bool) })]
+    public static class Patch_ResorceRow_SetData
+    {
+        [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
+
+        private static readonly FieldInfo ButonDeleteField =
+            typeof(ResorceRow).GetField("butonDelete", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        static void Postfix(ResorceRow __instance)
+        {
+            try
+            {
+                if (__instance.CargoResourceTypeType() != EResourceTypeType.modules) return;
+
+                var butonDelete = ButonDeleteField?.GetValue(__instance) as UnityEngine.UI.Button;
+                if (butonDelete == null) return;
+
+                var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
+                    ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
+                tt.CustomTextFromCodeRefreshText2 =
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl"), null, "");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_SetData: " + ex);
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
