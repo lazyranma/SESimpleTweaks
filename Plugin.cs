@@ -58,7 +58,7 @@ namespace SimpleTweaks
             FleetScales = Config.Bind(ConfigSection, "FleetScales", true,
                 "Scales the amount of resources added to cargo at once based on the size of the fleet.");
             KeepScanning = Config.Bind(ConfigSection, "KeepScanning", true,
-                "Telescopes and observatories will keep scanning for new asteroids and resources.");
+                "Telescopes and observatories keep scanning when there is something to scan for.");
             LiftMeOff = Config.Bind(ConfigSection, "LiftMeOff", true,
                 "Lifting cargo from the surface to orbit will not show \"Max capacity for optimal transfer\" = 0 T.");
             RoadClosed = Config.Bind(ConfigSection, "RoadClosed", true,
