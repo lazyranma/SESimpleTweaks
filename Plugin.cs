@@ -27,7 +27,6 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> KeepScanning;
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RoadClosed;
-        internal static ConfigEntry<bool> DontTipOut;
 
         private const string ConfigSection = "SimpleTweaks";
 
@@ -62,9 +61,6 @@ namespace SimpleTweaks
                 "Lifting cargo from the surface to orbit will not show \"Max capacity for optimal transfer\" = 0 T.");
             RoadClosed = Config.Bind(ConfigSection, "RoadClosed", true,
                 "Suppresses the roadmap window on startup.");
-            DontTipOut = Config.Bind(ConfigSection, "DontTipOut", true,
-                "Deposit and stored-resource tooltips no longer disappear when the Object Info window "
-                + "refreshes, and their numbers stay live.");
         }
 
         private void Awake()

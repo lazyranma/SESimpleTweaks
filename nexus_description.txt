@@ -18,7 +18,6 @@ A collection of convenient UI tweaks and quality-of-life features.
 [*][b]Keep Scanning[/b] — Telescopes and observatories keep scanning when there is something to scan for.[/*]
 [*][b]Lift Me Off[/b] — Prevent the “Max capacity for optimal transfer” value from incorrectly displaying 0 T when lifting cargo from the surface to its own orbit.[/*]
 [*][b]Road Closed[/b] — Suppress the roadmap window on startup.[/*]
-[*][b]Don't Tip Out[/b] — Deposit and stored-resource tooltips no longer disappear when the Object Info window refreshes, and their numbers stay live.[/*]
 [/list]
 
 [size=4]Configuration[/size]
