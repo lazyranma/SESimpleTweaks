@@ -1,11 +1,8 @@
 # Changelog
 
-All notable changes to SimpleTweaks. Release headers use the GitHub release titles.
-
 ## v0.11.0: Support for version 0.26.11.13.14
 
-- Reverted the **Don't Blink** and **Don't Tip Out** tweaks, because the corresponding bugs were
-  fixed.
+- Reverted the **Don't Blink** and **Don't Tip Out** tweaks, because the corresponding bugs were fixed.
 - Added workshop logo and description.
 
 ## v0.10.2: Don't Tip Out and Don't Blink

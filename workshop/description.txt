@@ -17,6 +17,5 @@ Adds convenient UI tweaks, quality-of-life features, and bugfixes.
 [*][b]Lift Me Off[/b] — Lifting cargo from the surface to its own orbit will not show “Max capacity for optimal transfer” = 0 T.
 [*][b]Road Closed[/b] — Suppresses the roadmap window on startup.
 [/list]
-
 [h2]Configuration[/h2]
 Each feature can be toggled on or off individually. The config file is created automatically on first launch at: BepInEx\config\com.lazyranma.simpletweaks.cfg. It lists one boolean option per feature, all defaulting to [b]true[/b] (everything enabled). Set an option to [b]false[/b] to disable that tweak, then restart the game to apply.
