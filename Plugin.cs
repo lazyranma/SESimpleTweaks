@@ -28,7 +28,6 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RoadClosed;
         internal static ConfigEntry<bool> DontTipOut;
-        internal static ConfigEntry<bool> DontBlink;
 
         private const string ConfigSection = "SimpleTweaks";
 
@@ -66,8 +65,6 @@ namespace SimpleTweaks
             DontTipOut = Config.Bind(ConfigSection, "DontTipOut", true,
                 "Deposit and stored-resource tooltips no longer disappear when the Object Info window "
                 + "refreshes, and their numbers stay live.");
-            DontBlink = Config.Bind(ConfigSection, "DontBlink", true,
-                "Section scrollbars in the Object Info window no longer blink when the window refreshes.");
         }
 
         private void Awake()
