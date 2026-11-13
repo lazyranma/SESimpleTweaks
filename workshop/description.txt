@@ -1,0 +1,21 @@
+Adds convenient UI tweaks, quality-of-life features, and bugfixes.
+[h2]Tweaks[/h2]
+[list]
+[*][b]In Control[/b] — Ctrl+Click to add/remove/queue 100 at a time (module cargo +/−, SC/LV counts, facility builds, SC/LV construction, number fields).
+[*][b]Mass Shift[/b] — Shift+Click to cancel construction of all items of the same type.
+[*][b]Good Tip[/b] — Object Search resource tooltip shows actually useful info.
+[*][b]Asteroid Tow[/b] — Display Atlas/Engine requirements in Object Search.
+[*][b]Quick to Orbit[/b] — ↑/↓ button inside the destination field to select body's orbit or a orbit's body.
+[*][b]Quick to Orbit II[/b] — Ctrl+Click or Ctrl+Drag on the quick-access body bar to target orbit.
+[*][b]Unsticky Crew[/b] — The crew slider is unlocked for all modules.
+[*][b]Space Bin[/b] — Trash bin button in the Object Search list.
+[*][b]Full Cycle[/b] — Full info on cyclical mission in the Planet/Orbit view.
+[*][b]Leave No Trace[/b] — Eliminate trace amounts of resources left when applying a build discount.
+[*][b]Fleet Scales[/b] — Scales the amount of resources added to cargo at once based on the size of the fleet.
+[*][b]Keep Scanning[/b] — Telescopes and observatories keep scanning when there is something to scan for.
+[*][b]Lift Me Off[/b] — Lifting cargo from the surface to its own orbit will not show "Max capacity for optimal transfer" = 0 T.
+[*][b]Road Closed[/b] — Suppresses the roadmap window on startup.
+[/list]
+
+[h2]Configuration[/h2]
+Each feature can be toggled on or off individually. The config file is created automatically on first launch at: BepInEx\config\com.lazyranma.simpletweaks.cfg. It lists one boolean option per feature, all defaulting to [b]true[/b] (everything enabled). Set an option to [b]false[/b] to disable that tweak, then restart the game to apply.
