@@ -109,20 +109,22 @@ def first_changelog_section(path: Path) -> str:
 # --------------------------------------------------------------------------- #
 # VDF
 # --------------------------------------------------------------------------- #
-def vdf_escape(value: str) -> str:
-    return (
-        value.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("\r\n", "\n")
-        .replace("\n", "\\n")
-        .replace("\t", "\\t")
-    )
+PATH_FIELDS = {"contentfolder", "previewfile"}
 
 
 def build_vdf(fields: dict[str, str]) -> str:
     lines = ['"workshopitem"', "{"]
     for key, value in fields.items():
-        lines.append(f'    "{key}" "{vdf_escape(value)}"')
+        if key in PATH_FIELDS:
+            # VDF paths use \\ for each literal backslash.
+            value = value.replace("\\", "\\\\")
+        elif '"' in value:
+            # A straight quote terminates the VDF string; \" is not decoded.
+            raise ValueError(f'{key} contains a straight quote; use typographic (“ ”) or single quotes')
+        # Text fields keep literal backslashes and newlines: steamcmd does not
+        # unescape \\ or \n inside description/changenote.
+        value = value.replace("\r\n", "\n")
+        lines.append(f'    "{key}" "{value}"')
     lines.append("}")
     return "\n".join(lines) + "\n"
 

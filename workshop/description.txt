@@ -1,4 +1,5 @@
 Adds convenient UI tweaks, quality-of-life features, and bugfixes.
+[url=https://github.com/lazyranma/SESimpleTweaks]GitHub[/url] | [url=https://discord.com/channels/1278330334982967468/1503836644338307102]Discord[/url]
 [h2]Tweaks[/h2]
 [list]
 [*][b]In Control[/b] — Ctrl+Click to add/remove/queue 100 at a time (module cargo +/−, SC/LV counts, facility builds, SC/LV construction, number fields).
@@ -13,7 +14,7 @@ Adds convenient UI tweaks, quality-of-life features, and bugfixes.
 [*][b]Leave No Trace[/b] — Eliminate trace amounts of resources left when applying a build discount.
 [*][b]Fleet Scales[/b] — Scales the amount of resources added to cargo at once based on the size of the fleet.
 [*][b]Keep Scanning[/b] — Telescopes and observatories keep scanning when there is something to scan for.
-[*][b]Lift Me Off[/b] — Lifting cargo from the surface to its own orbit will not show "Max capacity for optimal transfer" = 0 T.
+[*][b]Lift Me Off[/b] — Lifting cargo from the surface to its own orbit will not show “Max capacity for optimal transfer” = 0 T.
 [*][b]Road Closed[/b] — Suppresses the roadmap window on startup.
 [/list]
 
