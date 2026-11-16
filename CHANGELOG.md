@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.11.1: Support for version 0.26.11.13.14
 
 - Restored **Don't Blink**. Object Info section scrollbars still flash during refreshes on the Workshop and experimental builds.
 
