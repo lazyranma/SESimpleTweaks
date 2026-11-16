@@ -20,6 +20,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Keep Scanning** — Telescopes and observatories keep scanning when there is something to scan for.
 - **Lift Me Off** — Lifting cargo from the surface to its own orbit will not show "Max capacity for optimal transfer" = 0 T.
 - **Road Closed** — Suppresses the roadmap window on startup.
+- **Don't Blink** — Section scrollbars in the Object Info window no longer blink when the window refreshes.
 
 ## Installation
 

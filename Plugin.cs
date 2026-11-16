@@ -27,6 +27,7 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> KeepScanning;
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RoadClosed;
+        internal static ConfigEntry<bool> DontBlink;
 
         private const string ConfigSection = "SimpleTweaks";
 
@@ -61,6 +62,8 @@ namespace SimpleTweaks
                 "Lifting cargo from the surface to orbit will not show \"Max capacity for optimal transfer\" = 0 T.");
             RoadClosed = Config.Bind(ConfigSection, "RoadClosed", true,
                 "Suppresses the roadmap window on startup.");
+            DontBlink = Config.Bind(ConfigSection, "DontBlink", true,
+                "Section scrollbars in the Object Info window no longer blink when the window refreshes.");
         }
 
         private void Awake()

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Restored **Don't Blink**. Object Info section scrollbars still flash during refreshes on the Workshop and experimental builds.
+
 ## v0.11.0: Support for version 0.26.11.13.14
 
 - Reverted the **Don't Blink** and **Don't Tip Out** tweaks, because the corresponding bugs were fixed.
