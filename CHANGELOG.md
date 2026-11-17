@@ -2,6 +2,8 @@
 
 ## [Unreleased]: Title pending
 
+- Added the **Peekaboo** tweak — a configurable hotkey (ScrollLock by default) hides or shows
+  the whole in-game UI, and the version label is hidden along with it.
 - Added ScriptEngine hot-reload support. Reloading or unloading the plugin now unpatches all
   Harmony patches and reverts every change it makes to the game: injected buttons and tooltips,
   shifted UI elements, rich cyclical-mission rows, and modified facility and crew-row state.

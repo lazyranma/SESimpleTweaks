@@ -34,8 +34,11 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RoadClosed;
         internal static ConfigEntry<bool> DontBlink;
+        internal static ConfigEntry<bool> Peekaboo;
+        internal static ConfigEntry<KeyboardShortcut> ToggleUIHotkey;
 
         private const string ConfigSection = "SimpleTweaks";
+        private const string HotkeysSection = "Hotkeys";
 
         private void BindConfig()
         {
@@ -70,6 +73,12 @@ namespace SimpleTweaks
                 "Suppresses the roadmap window on startup.");
             DontBlink = Config.Bind(ConfigSection, "DontBlink", true,
                 "Section scrollbars in the Object Info window no longer blink when the window refreshes.");
+            Peekaboo = Config.Bind(ConfigSection, "Peekaboo", true,
+                "Hide or show the whole UI, version label included, with the key configured in ToggleUIHotkey.");
+            ToggleUIHotkey = Config.Bind(HotkeysSection, "ToggleUIHotkey",
+                new KeyboardShortcut(KeyCode.ScrollLock),
+                "Press this key (or key combination, e.g. ScrollLock + LeftControl) to hide or show "
+                + "the whole UI. Set to None to disable the hotkey.");
         }
 
         private void Awake()

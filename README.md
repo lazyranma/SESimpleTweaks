@@ -21,6 +21,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Lift Me Off** — Lifting cargo from the surface to its own orbit will not show "Max capacity for optimal transfer" = 0 T.
 - **Road Closed** — Suppresses the roadmap window on startup.
 - **Don't Blink** — Section scrollbars in the Object Info window no longer blink when the window refreshes.
+- **Peekaboo** — ScrollLock (configurable) hides or shows the whole UI, version label included; ignored while typing in a text field.
 
 ## Installation
 
@@ -49,7 +50,7 @@ Each feature can be toggled on or off individually. The config file is created a
 BepInEx\config\com.lazyranma.simpletweaks.cfg
 ```
 
-It lists one boolean option per feature, all defaulting to `true` (everything enabled). Set an option to `false` to disable that tweak, then restart the game to apply.
+It lists one boolean option per feature, all defaulting to `true` (everything enabled). Set an option to `false` to disable that tweak, then restart the game to apply. `ToggleUIHotkey` sets the key that hides or shows the whole UI. BepInEx expects the main key first and Unity `KeyCode` names, so Ctrl+ScrollLock is `ScrollLock + LeftControl`.
 
 ## Download
 Game version: 0.26.11.13.14. v0.11.1 [Download](https://github.com/lazyranma/SESimpleTweaks/releases/download/v0.11.1/SimpleTweaks_v0.11.1.zip)
