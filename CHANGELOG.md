@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## v0.11.3: Bugfixes
 
 - Fixed **Origins Schmorigins** to use simulated stock when adding cargo to hypothetical missions.
 - **Peekaboo** now works immediately after pressing Enter in a text field instead of staying
