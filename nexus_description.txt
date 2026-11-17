@@ -20,9 +20,11 @@ A collection of convenient UI tweaks and quality-of-life features.
 [*][b]Road Closed[/b] — Suppress the roadmap window on startup.[/*]
 [*][b]Don't Tip Out[/b] — Deposit and stored-resource tooltips no longer disappear when the Object Info window refreshes, and their numbers stay live.[/*]
 [*][b]Don't Blink[/b] — Section scrollbars in the Object Info window no longer blink when the window refreshes.[/*]
+[*][b]Peekaboo[/b] — ScrollLock (configurable) hides or shows the whole UI, version label included.[/*]
+[*][b]Origins Schmorigins[/b] — Drag a resource from any body into the mission planner. The mission origin still supplies the cargo.[/*]
 [/list]
 
 [size=4]Configuration[/size]
 Each feature can be toggled on or off individually. The configuration file is created automatically on first launch at: 
 [code]BepInEx\config\com.lazyranma.simpletweaks.cfg[/code]
-The file contains one Boolean option per feature, with all options enabled by default. Set an option to [b]false[/b] to disable that tweak, then restart the game to apply the change.
+The file contains one Boolean option per feature, with all options enabled by default. Set an option to [b]false[/b] to disable that tweak, then restart the game to apply the change. The [b]ToggleUIHotkey[/b] option sets the key that hides or shows the whole UI. BepInEx expects the main key first and Unity KeyCode names, so Ctrl+ScrollLock is ScrollLock + LeftControl.

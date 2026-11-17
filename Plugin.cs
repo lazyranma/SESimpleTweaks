@@ -5,6 +5,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine;
 
 namespace SimpleTweaks
 {
@@ -24,13 +25,17 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> FullCycle;
         internal static ConfigEntry<bool> LeaveNoTrace;
         internal static ConfigEntry<bool> FleetScales;
+        internal static ConfigEntry<bool> OriginsSchmorigins;
         internal static ConfigEntry<bool> KeepScanning;
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RoadClosed;
         internal static ConfigEntry<bool> DontTipOut;
         internal static ConfigEntry<bool> DontBlink;
+        internal static ConfigEntry<bool> Peekaboo;
+        internal static ConfigEntry<KeyboardShortcut> ToggleUIHotkey;
 
         private const string ConfigSection = "SimpleTweaks";
+        private const string HotkeysSection = "Hotkeys";
 
         private void BindConfig()
         {
@@ -57,6 +62,8 @@ namespace SimpleTweaks
                 "Eliminate trace amounts of resources left when applying a build discount.");
             FleetScales = Config.Bind(ConfigSection, "FleetScales", true,
                 "Scales the amount of resources added to cargo at once based on the size of the fleet.");
+            OriginsSchmorigins = Config.Bind(ConfigSection, "OriginsSchmorigins", true,
+                "Drag a resource from any body into the mission planner. The mission origin still supplies the cargo.");
             KeepScanning = Config.Bind(ConfigSection, "KeepScanning", true,
                 "Telescopes and observatories keep scanning when there is something to scan for.");
             LiftMeOff = Config.Bind(ConfigSection, "LiftMeOff", true,
@@ -68,6 +75,12 @@ namespace SimpleTweaks
                 + "refreshes, and their numbers stay live.");
             DontBlink = Config.Bind(ConfigSection, "DontBlink", true,
                 "Section scrollbars in the Object Info window no longer blink when the window refreshes.");
+            Peekaboo = Config.Bind(ConfigSection, "Peekaboo", true,
+                "Hide or show the whole UI, version label included, with the key configured in ToggleUIHotkey.");
+            ToggleUIHotkey = Config.Bind(HotkeysSection, "ToggleUIHotkey",
+                new KeyboardShortcut(KeyCode.ScrollLock),
+                "Press this key (or key combination, e.g. ScrollLock + LeftControl) to hide or show "
+                + "the whole UI. Set to None to disable the hotkey.");
         }
 
         private void Awake()
