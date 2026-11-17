@@ -52,7 +52,9 @@ namespace SimpleTweaks
                 if (!toOrbit && list.LoadLimit2.HasValue)
                     capacity = (int)Math.Min(capacity, list.LoadLimit2.Value);
 
-                double stock = inventory.CheckResources(resource);
+                double stock = cargos.hypothetical
+                    ? new ObjectInfoFake(inventory).CheckResourcesInterface(resource)
+                    : inventory.CheckResources(resource);
                 if (!toOrbit)
                     stock = stock.IsNearOne() ? 1 : Math.Floor(stock);
                 var cargo = new Cargo(cargos)

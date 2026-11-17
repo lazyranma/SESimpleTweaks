@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Fixed **Origins Schmorigins** to use simulated stock when adding cargo to hypothetical missions.
+
 ## v0.11.2: Peekaboo and Origins Schmorigins
 
 - Added **Origins Schmorigins** — drag resources from any body into the mission planner.
