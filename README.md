@@ -22,6 +22,7 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 - **Road Closed** — Suppresses the roadmap window on startup.
 - **Don't Blink** — Section scrollbars in the Object Info window no longer blink when the window refreshes.
 - **Peekaboo** — ScrollLock (configurable) hides or shows the whole UI, version label included; ignored while typing in a text field.
+- **Origins Schmorigins** — Drag a resource from any body into the mission planner. The mission origin still supplies the cargo.
 
 ## Installation
 

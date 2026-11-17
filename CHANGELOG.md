@@ -2,6 +2,7 @@
 
 ## [Unreleased]: Title pending
 
+- Added **Origins Schmorigins** — drag resources from any body into the mission planner.
 - Added the **Peekaboo** tweak — a configurable hotkey (ScrollLock by default) hides or shows
   the whole in-game UI, and the version label is hidden along with it.
 - Added ScriptEngine hot-reload support. Reloading or unloading the plugin now unpatches all

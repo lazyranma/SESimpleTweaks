@@ -30,6 +30,7 @@ namespace SimpleTweaks
         internal static ConfigEntry<bool> FullCycle;
         internal static ConfigEntry<bool> LeaveNoTrace;
         internal static ConfigEntry<bool> FleetScales;
+        internal static ConfigEntry<bool> OriginsSchmorigins;
         internal static ConfigEntry<bool> KeepScanning;
         internal static ConfigEntry<bool> LiftMeOff;
         internal static ConfigEntry<bool> RoadClosed;
@@ -65,6 +66,8 @@ namespace SimpleTweaks
                 "Eliminate trace amounts of resources left when applying a build discount.");
             FleetScales = Config.Bind(ConfigSection, "FleetScales", true,
                 "Scales the amount of resources added to cargo at once based on the size of the fleet.");
+            OriginsSchmorigins = Config.Bind(ConfigSection, "OriginsSchmorigins", true,
+                "Drag a resource from any body into the mission planner. The mission origin still supplies the cargo.");
             KeepScanning = Config.Bind(ConfigSection, "KeepScanning", true,
                 "Telescopes and observatories keep scanning when there is something to scan for.");
             LiftMeOff = Config.Bind(ConfigSection, "LiftMeOff", true,
