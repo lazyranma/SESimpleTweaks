@@ -32,6 +32,15 @@ A BepInEx plugin for Solar Expanse that adds convenient UI tweaks and quality-of
 1. **Install BepInEx** — Follow the [BepInEx setup guide](https://docs.bepinex.dev/articles/user_guide/installation/index.html) for Solar Expanse.
 2. **Extract plugin** — Unzip `SimpleTweaks.zip` into `BepInEx\plugins\`.
 
+### Steam Workshop — experimental game branch
+
+Workshop mod support only exists in the experimental branch; on stable, install manually or via Vortex instead.
+
+1. **Install BepInEx** — Follow the [BepInEx setup guide](https://docs.bepinex.dev/articles/user_guide/installation/index.html) for Solar Expanse.
+2. **Subscribe** — [Simple Tweaks on the Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3831909357).
+3. **Remove any existing install** — If the plugin is already in `BepInEx\plugins\SimpleTweaks`, quit the game and delete that folder first; the game cannot update an installed mod.
+4. **Start twice** — Subscribed items are only copied into `BepInEx\plugins` when the game exits, so launch, quit, and launch again.
+
 ## Configuration
 
 Each feature can be toggled on or off individually. The config file is created automatically on first launch at:
