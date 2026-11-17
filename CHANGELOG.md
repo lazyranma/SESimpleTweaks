@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]: Title pending
+
+- Added ScriptEngine hot-reload support. Reloading or unloading the plugin now unpatches all
+  Harmony patches and reverts every change it makes to the game: injected buttons and tooltips,
+  shifted UI elements, rich cyclical-mission rows, and modified facility and crew-row state.
+
 ## v0.11.1: Restore Don't Blink
 
 - Restored **Don't Blink**. Object Info section scrollbars still flash during refreshes on the Workshop and experimental builds.

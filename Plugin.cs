@@ -2,16 +2,22 @@ using System;
 using System.Linq;
 using System.Reflection;
 using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine;
 
 namespace SimpleTweaks
 {
-    [BepInPlugin("com.lazyranma.simpletweaks", "Simple Tweaks", VersionConstants.PluginVersion)]
+    [BepInPlugin(PluginGuid, "Simple Tweaks", VersionConstants.PluginVersion)]
     public class Plugin : BaseUnityPlugin
     {
+        internal const string PluginGuid = "com.lazyranma.simpletweaks";
+
         internal static ManualLogSource Log;
+
+        private static Harmony HarmonyInstance;
 
         internal static ConfigEntry<bool> InControl;
         internal static ConfigEntry<bool> MassShift;
@@ -72,7 +78,18 @@ namespace SimpleTweaks
 
             BindConfig();
 
-            var harmony = new Harmony("com.lazyranma.simpletweaks");
+            // Solar Expanse destroys BepInEx_Manager at frame 0 unless the object carries
+            // HideFlags.DontSave, and the resulting OnDestroy would unpatch Harmony before
+            // the first frame. A released install runs with HideManagerGameObject = false,
+            // so protect the manager ourselves. A ScriptEngine host already has
+            // HideAndDontSave and is left alone.
+            if (gameObject == Chainloader.ManagerObject
+                && (gameObject.hideFlags & HideFlags.DontSave) == 0)
+            {
+                gameObject.hideFlags |= HideFlags.DontSave;
+            }
+
+            HarmonyInstance = new Harmony(PluginGuid);
 
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
             {
@@ -81,7 +98,7 @@ namespace SimpleTweaks
 
                 try
                 {
-                    harmony.CreateClassProcessor(type).Patch();
+                    HarmonyInstance.CreateClassProcessor(type).Patch();
                 }
                 catch (Exception ex)
                 {
@@ -91,6 +108,51 @@ namespace SimpleTweaks
             }
 
             Log.LogInfo($"SimpleTweaks loaded.");
+
+            // ScriptEngine reloads mid-game, when the windows and list rows that Awake/Start
+            // already initialized are still alive. Their setup hooks will not run again, so
+            // run the idempotent setup here to replace what the previous instance removed.
+            try
+            {
+                Reinitialize.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.LogError($"[SimpleTweaks] Failed to reinitialize existing UI: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Detaches every hook and undoes the UI changes so ScriptEngine can replace this
+        /// instance with a fresh assembly. Harmony identifies patches by MethodInfo, so the
+        /// old assembly's patches would otherwise run alongside the new ones and leak into
+        /// the game state.
+        /// </summary>
+        private void OnDestroy()
+        {
+            Log.LogInfo("SimpleTweaks unloading.");
+
+            try
+            {
+                HarmonyInstance?.UnpatchSelf();
+            }
+            catch (Exception ex)
+            {
+                Log.LogError($"[SimpleTweaks] Failed to unpatch Harmony: {ex}");
+            }
+            finally
+            {
+                HarmonyInstance = null;
+            }
+
+            try
+            {
+                Teardown.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.LogError($"[SimpleTweaks] Teardown failed: {ex}");
+            }
         }
     }
 }

@@ -36,7 +36,16 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(ResorceRow), "BlockDropDown")]
     public static class Patch_ResorceRow_BlockDropDown_KeepCrewSlider
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.UnstickyCrew.Value;
+        [HarmonyPrepare]
+        static bool Prepare()
+        {
+            if (!_teardownRegistered)
+            {
+                _teardownRegistered = true;
+                Teardown.TrackRestore(RestoreAll);
+            }
+            return Plugin.UnstickyCrew.Value;
+        }
 
         private static readonly FieldInfo ButonDeleteFieldB =
             typeof(ResorceRow).GetField("butonDelete",
@@ -49,18 +58,46 @@ namespace SimpleTweaks
                 BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new MissingFieldException(typeof(ResorceRow).FullName, "butonDeleteToolTip");
 
+        private sealed class OriginalState
+        {
+            internal bool Listed;
+            internal bool DropDownInteractable;
+            internal bool DeleteInteractable;
+            internal bool TooltipEnabled;
+            internal bool AddMultiActive;
+        }
+
+        // Kept per row so a ScriptEngine reload can put the controls back the way they were.
+        // The list holds rows strongly while they are alive; destroyed rows are pruned.
+        private static readonly ConditionalWeakTable<ResorceRow, OriginalState> OriginalStates =
+            new ConditionalWeakTable<ResorceRow, OriginalState>();
+        private static readonly LiveObjectList<ResorceRow> TrackedRows = new LiveObjectList<ResorceRow>();
+        private static bool _teardownRegistered;
+
         static bool Prefix(ResorceRow __instance)
         {
             if (!__instance.CrewModuleOn) return true; // non-crew rows: run original
             try
             {
                 var dd = __instance.ResorceDropDownModuleRectTransform?.GetComponent<DropDownEnum>();
-                if (dd?.dropDown != null) dd.dropDown.interactable = false;
                 var del = ButonDeleteFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
-                if (del != null) del.interactable = false;
                 var deleteToolTip = (ShowToolTip)ButonDeleteToolTipField.GetValue(__instance);
-                if (deleteToolTip != null) deleteToolTip.enabled = false;
                 var am = AddMultiFieldB?.GetValue(__instance) as UnityEngine.UI.Button;
+
+                OriginalState original = OriginalStates.GetValue(__instance, _ => new OriginalState());
+                if (!original.Listed)
+                {
+                    original.Listed = true;
+                    original.DropDownInteractable = dd == null || dd.dropDown == null || dd.dropDown.interactable;
+                    original.DeleteInteractable = del == null || del.interactable;
+                    original.TooltipEnabled = deleteToolTip == null || deleteToolTip.enabled;
+                    original.AddMultiActive = am == null || am.gameObject.activeSelf;
+                    TrackedRows.Add(__instance);
+                }
+
+                if (dd?.dropDown != null) dd.dropDown.interactable = false;
+                if (del != null) del.interactable = false;
+                if (deleteToolTip != null) deleteToolTip.enabled = false;
                 if (am != null) am.gameObject.SetActive(false);
                 return false; // skip original (which would also lock the crew slider)
             }
@@ -69,6 +106,36 @@ namespace SimpleTweaks
                 Plugin.Log.LogError("[SimpleTweaks] Patch_ResorceRow_BlockDropDown_KeepCrewSlider: " + ex);
                 return true; // fallback: run original
             }
+        }
+
+        private static void RestoreAll()
+        {
+            TrackedRows.Visit(row =>
+            {
+                if (!OriginalStates.TryGetValue(row, out OriginalState original)) return;
+                try
+                {
+                    Restore(row, original);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] UnstickyCrew teardown: " + ex);
+                }
+            });
+        }
+
+        private static void Restore(ResorceRow row, OriginalState original)
+        {
+            if (row == null) return;
+
+            var dd = row.ResorceDropDownModuleRectTransform?.GetComponent<DropDownEnum>();
+            if (dd?.dropDown != null) dd.dropDown.interactable = original.DropDownInteractable;
+            var del = ButonDeleteFieldB?.GetValue(row) as UnityEngine.UI.Button;
+            if (del != null) del.interactable = original.DeleteInteractable;
+            var deleteToolTip = (ShowToolTip)ButonDeleteToolTipField.GetValue(row);
+            if (deleteToolTip != null) deleteToolTip.enabled = original.TooltipEnabled;
+            var am = AddMultiFieldB?.GetValue(row) as UnityEngine.UI.Button;
+            if (am != null) am.gameObject.SetActive(original.AddMultiActive);
         }
     }
 }

@@ -140,10 +140,9 @@ namespace SimpleTweaks
                 var addMulti = AddMultiField?.GetValue(__instance) as UnityEngine.UI.Button;
                 if (addMulti == null || !addMulti.gameObject.activeSelf) return;
 
-                var tt = addMulti.gameObject.GetComponent<ShowToolTip>()
-                    ?? addMulti.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => (LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl"), null, "");
+                var tt = TooltipHook.Acquire(addMulti.gameObject);
+                TooltipHook.SetRefresh(tt,
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.AddModuleShiftCtrl"), null, ""));
             }
             catch (Exception ex)
             {
@@ -170,10 +169,9 @@ namespace SimpleTweaks
                 var butonDelete = ButonDeleteField?.GetValue(__instance) as UnityEngine.UI.Button;
                 if (butonDelete == null) return;
 
-                var tt = butonDelete.gameObject.GetComponent<ShowToolTip>()
-                    ?? butonDelete.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => (LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl"), null, "");
+                var tt = TooltipHook.Acquire(butonDelete.gameObject);
+                TooltipHook.SetRefresh(tt,
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.RemoveModuleShiftCtrl"), null, ""));
             }
             catch (Exception ex)
             {
@@ -203,8 +201,8 @@ namespace SimpleTweaks
             if (tt == null) return;
             string baseText = tt.CustomTextFromCode;
             if (string.IsNullOrEmpty(baseText)) return;
-            tt.CustomTextFromCodeRefreshText2 = () =>
-                (baseText + "\n<color=grey>" + LEManager.Get("SimpleTweaks.Tooltip.CtrlHint") + "</color>", null, "");
+            TooltipHook.SetRefresh(tt,
+                () => (baseText + "\n<color=grey>" + LEManager.Get("SimpleTweaks.Tooltip.CtrlHint") + "</color>", null, ""));
         }
     }
 
@@ -241,17 +239,19 @@ namespace SimpleTweaks
     {
         [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
 
-        static void Postfix(SpaceCraftConstructionWindow __instance)
+        static void Postfix(SpaceCraftConstructionWindow __instance) => Apply(__instance);
+
+        internal static void Apply(SpaceCraftConstructionWindow __instance)
         {
+            if (!Plugin.InControl.Value || __instance == null) return;
             try
             {
                 var btnAccept = __instance.RectTransformBtnAccept?.GetComponent<UnityEngine.UI.Button>();
                 if (btnAccept == null) return;
 
-                var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
-                    ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => (LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl"), null, "");
+                var tt = TooltipHook.Acquire(btnAccept.gameObject);
+                TooltipHook.SetRefresh(tt,
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl"), null, ""));
             }
             catch (Exception ex)
             {
@@ -268,17 +268,19 @@ namespace SimpleTweaks
     {
         [HarmonyPrepare] static bool Prepare() => Plugin.InControl.Value;
 
-        static void Postfix(ChoseFacilityWindow __instance)
+        static void Postfix(ChoseFacilityWindow __instance) => Apply(__instance);
+
+        internal static void Apply(ChoseFacilityWindow __instance)
         {
+            if (!Plugin.InControl.Value || __instance == null) return;
             try
             {
                 var btnAccept = __instance.RectTransformBtnAccept?.GetComponent<UnityEngine.UI.Button>();
                 if (btnAccept == null) return;
 
-                var tt = btnAccept.gameObject.GetComponent<ShowToolTip>()
-                    ?? btnAccept.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCodeRefreshText2 =
-                    () => (LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl"), null, "");
+                var tt = TooltipHook.Acquire(btnAccept.gameObject);
+                TooltipHook.SetRefresh(tt,
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.BuildShiftCtrl"), null, ""));
             }
             catch (Exception ex)
             {

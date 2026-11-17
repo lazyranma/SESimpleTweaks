@@ -95,8 +95,17 @@
     <ZipDirectory SourceDirectory="$(_NexusStageRoot)" DestinationFile="$(OutputPath)SimpleTweaks-$(PluginVersion).zip" Overwrite="true" />
     <RemoveDir Directories="$(_NexusStageRoot)" />
 
-    <MakeDir Directories="$(GameDir)\BepInEx\plugins\SimpleTweaks\" />
-    <Copy SourceFiles="$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(GameDir)\BepInEx\plugins\SimpleTweaks\" Retries="0" ContinueOnError="true" />
+    <!-- Workshop upload content: only the DLL. Kept apart from the ScriptEngine deploy so
+         publishing does not depend on what is currently installed in the game folder. -->
+    <MakeDir Directories="$(OutputPath)workshop\" />
+    <Copy SourceFiles="$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(OutputPath)workshop\" />
+
+    <!-- Development deploy: ScriptEngine loads the assembly with ReadSymbols = true, so the
+         .pdb has to sit next to the .dll. ScriptEngine must have IncludeSubdirectories
+         enabled (com.bepis.bepinex.scriptengine.cfg) to scan this folder. The plugin must
+         not also be present under BepInEx\plugins, or it will load twice. -->
+    <MakeDir Directories="$(GameDir)\BepInEx\scripts\SimpleTweaks\" />
+    <Copy SourceFiles="$(OutputPath)SimpleTweaks.pdb;$(OutputPath)SimpleTweaks.dll" DestinationFolder="$(GameDir)\BepInEx\scripts\SimpleTweaks\" Retries="0" ContinueOnError="true" />
   </Target>
 
 </Project>

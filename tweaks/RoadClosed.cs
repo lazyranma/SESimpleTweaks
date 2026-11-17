@@ -11,9 +11,16 @@ namespace SimpleTweaks
 
         private static readonly FieldInfo _roadmapWasDisplayed =
             AccessTools.Field(typeof(MenuSceneUI), "roadmapWasDisplayed");
+        private static bool _originalCaptured;
 
         static void Prefix()
         {
+            if (!_originalCaptured)
+            {
+                _originalCaptured = true;
+                object original = _roadmapWasDisplayed.GetValue(null);
+                Teardown.TrackRestore(() => _roadmapWasDisplayed.SetValue(null, original));
+            }
             _roadmapWasDisplayed.SetValue(null, true);
         }
     }

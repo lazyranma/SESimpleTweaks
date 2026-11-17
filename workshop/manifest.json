@@ -4,7 +4,7 @@
   "description_file": "description.txt",
   "previewfile": "logo_512.jpg",
   "tags": ["BepInEx", "UI", "UX", "Fixes"],
-  "contentfolder": "../../../game_dir/BepInEx/plugins/SimpleTweaks",
+  "contentfolder": "../bin/Release/workshop",
   "required_files": ["SimpleTweaks.dll"],
   "changelog": {"path": "../CHANGELOG.md"}
 }

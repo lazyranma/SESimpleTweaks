@@ -36,8 +36,6 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(UIRowMission), "SetDataRowMissionDataCycleMissionsInfo")]
     public static class Patch_UIRowMission_CyclicRichDisplay
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.FullCycle.Value;
-
         private static MissionRowCyclicalNew _cachedPrefab;
         private static bool _prefabLookedUp;
 
@@ -62,11 +60,88 @@ namespace SimpleTweaks
         private static readonly FieldInfo CycleDataField =
             typeof(UIRowMission).GetField("cycleMissionsData",
                 BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly MethodInfo CycleBinderMethod =
+            AccessTools.Method(typeof(UIRowMission), "SetDataRowMissionDataCycleMissionsInfo")
+            ?? throw new MissingMethodException(typeof(UIRowMission).FullName,
+                "SetDataRowMissionDataCycleMissionsInfo");
 
-        private static bool _maxRowsFixed;
+        // Only rows whose rich child was created need rebinding at teardown. A row that the
+        // game reused for a one-time mission has already been restored by the AlwaysClean
+        // prefix, and touching it again would re-enable the count badge vanilla hides.
+        private sealed class RowState
+        {
+            internal bool Listed;
+        }
+
+        private static readonly ConditionalWeakTable<UIRowMission, RowState> ModifiedRows =
+            new ConditionalWeakTable<UIRowMission, RowState>();
+        private static readonly LiveObjectList<UIRowMission> ModifiedRowList =
+            new LiveObjectList<UIRowMission>();
+
         private static readonly FieldInfo MaxRowsField =
             typeof(UIList<UIRowMission, RowMissionData>).GetField("maxRows",
                 BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // The original value is needed to undo the change during a ScriptEngine reload.
+        private static readonly Dictionary<UIMissionsList, int> MaxRowsBefore =
+            new Dictionary<UIMissionsList, int>();
+        private static bool _teardownRegistered;
+
+        [HarmonyPrepare]
+        static bool Prepare()
+        {
+            RegisterTeardown();
+            return Plugin.FullCycle.Value;
+        }
+
+        internal static void RegisterTeardown()
+        {
+            if (_teardownRegistered) return;
+            _teardownRegistered = true;
+            Teardown.TrackRestore(RestoreAll);
+        }
+
+        // Restore only the rows the rich display replaced, so the vanilla binding is rebuilt
+        // from the current mission data instead of being left with hidden or empty labels.
+        private static void RestoreAll()
+        {
+            ModifiedRowList.Visit(row =>
+            {
+                try
+                {
+                    // A pooled row reused for a one-time mission has no cyclical data and was
+                    // already restored by Patch_UIRowMission_AlwaysClean.
+                    if (CycleDataField.GetValue(row) == null) return;
+
+                    CleanRow(row);
+                    CycleBinderMethod.Invoke(row, null);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.LogError("[SimpleTweaks] FullCycle teardown (row): " + ex);
+                }
+            });
+
+            if (MaxRowsField != null)
+            {
+                foreach (KeyValuePair<UIMissionsList, int> pair in MaxRowsBefore)
+                {
+                    if (pair.Key == null) continue;
+                    try
+                    {
+                        MaxRowsField.SetValue(pair.Key, pair.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Log.LogError("[SimpleTweaks] FullCycle teardown (maxRows): " + ex);
+                    }
+                }
+            }
+            MaxRowsBefore.Clear();
+
+            _prefabLookedUp = false;
+            _cachedPrefab = null;
+        }
 
         internal static void SetActive(FieldInfo field, UIRowMission instance, bool active)
         {
@@ -82,7 +157,11 @@ namespace SimpleTweaks
             for (int i = t.childCount - 1; i >= 0; i--)
             {
                 if (t.GetChild(i).name.StartsWith("ST_CyclicRich"))
-                    UnityEngine.Object.Destroy(t.GetChild(i).gameObject);
+                {
+                    GameObject child = t.GetChild(i).gameObject;
+                    child.SetActive(false);
+                    UnityEngine.Object.Destroy(child);
+                }
             }
 
             SetActive(IconField, instance, true);
@@ -140,14 +219,11 @@ namespace SimpleTweaks
                     return true;
 
                 // Ensure the parent UIMissionsList allows variable-height rows
-                if (!_maxRowsFixed)
+                var ml = __instance.GetComponentInParent<UIMissionsList>();
+                if (ml != null && MaxRowsField != null && !MaxRowsBefore.ContainsKey(ml))
                 {
-                    _maxRowsFixed = true;
-                    var ml = __instance.GetComponentInParent<UIMissionsList>();
-                    if (ml != null && MaxRowsField != null)
-                    {
-                        MaxRowsField.SetValue(ml, 0);
-                    }
+                    MaxRowsBefore[ml] = (int)MaxRowsField.GetValue(ml);
+                    MaxRowsField.SetValue(ml, 0);
                 }
 
                 var prefab = GetPrefab();
@@ -177,6 +253,12 @@ namespace SimpleTweaks
                 var rich = UnityEngine.Object.Instantiate(prefab, t);
                 rich.name = "ST_CyclicRich";
                 rich.SetData(cmd);
+                RowState state = ModifiedRows.GetValue(__instance, _ => new RowState());
+                if (!state.Listed)
+                {
+                    state.Listed = true;
+                    ModifiedRowList.Add(__instance);
+                }
 
                 // Recursively fix ALL LayoutElement minWidths and all
                 // HorizontalLayoutGroup alignments in the rich row hierarchy.

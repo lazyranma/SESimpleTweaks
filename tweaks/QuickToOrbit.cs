@@ -36,7 +36,24 @@ namespace SimpleTweaks
     [HarmonyPatch(typeof(PMTabDestination), "Awake")]
     public static class Patch_PMTabDestination_DestShortcut
     {
-        [HarmonyPrepare] static bool Prepare() => Plugin.QuickToOrbit.Value;
+        [HarmonyPrepare]
+        static bool Prepare()
+        {
+            RegisterTeardown();
+            return Plugin.QuickToOrbit.Value;
+        }
+
+        internal static void RegisterTeardown()
+        {
+            if (_teardownRegistered) return;
+            _teardownRegistered = true;
+            Teardown.TrackRestore(RestoreAll);
+        }
+
+        private static void RestoreAll()
+        {
+            Registered.Visit(key => Registry.Remove(key));
+        }
 
         private static readonly FieldInfo DestInputField =
             typeof(PMTabDestination).GetField("destinationInput",
@@ -55,12 +72,20 @@ namespace SimpleTweaks
         }
         internal static readonly ConditionalWeakTable<PMTabDestination, DestShortcutEntry> Registry =
             new ConditionalWeakTable<PMTabDestination, DestShortcutEntry>();
+        private static readonly LiveObjectList<PMTabDestination> Registered =
+            new LiveObjectList<PMTabDestination>();
 
         private const float BtnWidth = 22f;
         private const float BtnInset = 2f;
+        private static bool _teardownRegistered;
 
-        static void Postfix(PMTabDestination __instance)
+        static void Postfix(PMTabDestination __instance) => Apply(__instance);
+
+        internal static void Apply(PMTabDestination __instance)
         {
+            if (!Plugin.QuickToOrbit.Value || __instance == null) return;
+            if (Registry.TryGetValue(__instance, out _)) return;
+
             try
             {
                 var destInput = DestInputField?.GetValue(__instance) as ObjectSearchInputField;
@@ -70,6 +95,7 @@ namespace SimpleTweaks
 
                 // ── build button game object ───────────────────────────────
                 var btnGo = new GameObject("ST_DestShortcut");
+                Teardown.TrackCreated(btnGo);
                 // Parent to the destination input; the button's rect extends
                 // outside the input's bounds to the right (no masking at root).
                 btnGo.transform.SetParent(destInput.transform, false);
@@ -155,6 +181,7 @@ namespace SimpleTweaks
                 });
 
                 Registry.Add(__instance, new DestShortcutEntry(btn, lbl));
+                Registered.Add(__instance);
                 RefreshButton(startInput, btn, lbl);
             }
             catch (Exception ex)

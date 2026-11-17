@@ -194,8 +194,13 @@ namespace SimpleTweaks
             return _trashSprite;
         }
 
-        static void Postfix(SearchRow __instance)
+        static void Postfix(SearchRow __instance) => Apply(__instance);
+
+        internal static void Apply(SearchRow __instance)
         {
+            if (__instance == null) return;
+            if (!Plugin.SpaceBin.Value && !Plugin.AsteroidTow.Value) return;
+
             try
             {
                 ObjectInfo oi = __instance.ObjectInfo;
@@ -205,16 +210,24 @@ namespace SimpleTweaks
                 TextMeshProUGUI moonsTmp = MoonsField?.GetValue(__instance) as TextMeshProUGUI;
                 if (moonsTmp == null) return;
 
-                if (Plugin.SpaceBin.Value)
+                Transform host = moonsTmp.transform.parent;
+                if (host == null) return;
+
+                if (Plugin.SpaceBin.Value && !HasTrashButton(host))
                     AddTrashButton(oi, moonsTmp);
 
-                if (Plugin.AsteroidTow.Value && oi.PushableAsteroid2)
+                if (Plugin.AsteroidTow.Value && oi.PushableAsteroid2 && host.Find("TowRequirements") == null)
                     AddTowInfo(oi, moonsTmp);
             }
             catch (Exception ex)
             {
                 Plugin.Log.LogError("[SimpleTweaks] Patch_SearchRow_Start: " + ex);
             }
+        }
+
+        private static bool HasTrashButton(Transform host)
+        {
+            return host.Find("AsteroidTrashBtn") != null || host.Find("AsteroidTrashSpacer") != null;
         }
 
         // Space Bin: trash button for asteroids/comets in Object Search.
@@ -225,6 +238,7 @@ namespace SimpleTweaks
 
             // ── Create delete button / spacer ──
             var delGo = new GameObject(canDelete ? "AsteroidTrashBtn" : "AsteroidTrashSpacer");
+            Teardown.TrackCreated(delGo);
             delGo.transform.SetParent(moonsTmp.transform.parent, false);
             delGo.transform.SetAsLastSibling();
 
@@ -266,7 +280,8 @@ namespace SimpleTweaks
                                 if (w.Open && w.ObjectInfoCurrent == oiDel)
                                     w.HideImmediately();
                                 var sow = SerializedMonoBehaviourSingleton<UIManager>.Instance.GetWindow<SearchObjectWindow>();
-                                if (sow != null) sow.StartCoroutine(ReExpandParent(parentOI, parentGroup));
+                                if (sow != null)
+                                    Teardown.StartCoroutine(sow, ReExpandParent(parentOI, parentGroup));
                             },
                             delegate { },
                             btnOkEnable: true, btnNoEnable: true,
@@ -306,6 +321,7 @@ namespace SimpleTweaks
             }
 
             // ── Shift moonsRT left ──
+            Teardown.TrackAnchoredPosition(moonsRT);
             moonsRT.anchoredPosition = new Vector2(
                 moonsRT.anchoredPosition.x - TotalDeleteColumnWidth,
                 moonsRT.anchoredPosition.y);
@@ -325,6 +341,7 @@ namespace SimpleTweaks
             int engineCount = oi.AsteroidCanBePushHowMuch(player, engine);
 
             var towGo = new GameObject("TowRequirements");
+            Teardown.TrackCreated(towGo);
             towGo.transform.SetParent(moonsTmp.transform.parent, false);
             towGo.transform.SetAsLastSibling();
 

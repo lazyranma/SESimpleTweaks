@@ -104,17 +104,16 @@ namespace SimpleTweaks
                     .GetValue<UnityEngine.UI.Button>();
                 if (actionButton == null) return;
 
-                var tt = actionButton.gameObject.GetComponent<ShowToolTip>()
-                    ?? actionButton.gameObject.AddComponent<ShowToolTip>();
+                var tt = TooltipHook.Acquire(actionButton.gameObject);
 
                 bool inCancelBuildMode =
                     currentFacility != null
                     && currentFacility.BuildProgress < 1f
                     && currentFacility.Company == MonoBehaviourSingleton<GameManager>.Instance.Player;
 
-                tt.CustomTextFromCodeRefreshText2 = inCancelBuildMode
+                TooltipHook.SetRefresh(tt, inCancelBuildMode
                     ? (Func<(string, List<(string, string)>, string)>)(() => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"), null, ""))
-                    : null;
+                    : null);
             }
             catch (Exception ex)
             {
@@ -183,12 +182,10 @@ namespace SimpleTweaks
                 {
                     var btn = row.ButtonCancel;
                     if (btn == null) continue;
-                    var existing = btn.gameObject.GetComponents<ShowToolTip>();
-                    foreach (var st in existing)
-                        UnityEngine.Object.Destroy(st);
-                    var tt = btn.gameObject.AddComponent<ShowToolTip>();
-                    tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings");
-                    tt.CustomTextFromCodeRefreshText2 = () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"), null, "");
+                    var tt = TooltipHook.Acquire(btn.gameObject);
+                    TooltipHook.SetText(tt, LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"));
+                    TooltipHook.SetRefresh(tt,
+                        () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllBuildings"), null, ""));
                 }
             }
             catch (Exception ex)
@@ -254,18 +251,21 @@ namespace SimpleTweaks
     {
         [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
 
-        static void Postfix(UIRowRocket __instance)
+        static void Postfix(UIRowRocket __instance) => Apply(__instance);
+
+        internal static void Apply(UIRowRocket __instance)
         {
+            if (!Plugin.MassShift.Value || __instance == null) return;
             try
             {
                 var btn = Traverse.Create(__instance)
                     .Field("buttonCancelConstruction")
                     .GetValue<UnityEngine.UI.Button>();
                 if (btn == null) return;
-                var tt = btn.gameObject.GetComponent<ShowToolTip>()
-                    ?? btn.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
-                tt.CustomTextFromCodeRefreshText2 = () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"), null, "");
+                var tt = TooltipHook.Acquire(btn.gameObject);
+                TooltipHook.SetText(tt, LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"));
+                TooltipHook.SetRefresh(tt,
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"), null, ""));
             }
             catch (Exception ex)
             {
@@ -331,18 +331,21 @@ namespace SimpleTweaks
     {
         [HarmonyPrepare] static bool Prepare() => Plugin.MassShift.Value;
 
-        static void Postfix(SpaceCraftInfoWindow __instance)
+        static void Postfix(SpaceCraftInfoWindow __instance) => Apply(__instance);
+
+        internal static void Apply(SpaceCraftInfoWindow __instance)
         {
+            if (!Plugin.MassShift.Value || __instance == null) return;
             try
             {
                 var btn = Traverse.Create(__instance)
                     .Field("cancelBuildButton")
                     .GetValue<UnityEngine.UI.Button>();
                 if (btn == null) return;
-                var tt = btn.gameObject.GetComponent<ShowToolTip>()
-                    ?? btn.gameObject.AddComponent<ShowToolTip>();
-                tt.CustomTextFromCode = LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction");
-                tt.CustomTextFromCodeRefreshText2 = () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"), null, "");
+                var tt = TooltipHook.Acquire(btn.gameObject);
+                TooltipHook.SetText(tt, LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"));
+                TooltipHook.SetRefresh(tt,
+                    () => (LEManager.Get("SimpleTweaks.Tooltip.CancelAllConstruction"), null, ""));
             }
             catch (Exception ex)
             {
