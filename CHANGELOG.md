@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 - Fixed **Origins Schmorigins** to use simulated stock when adding cargo to hypothetical missions.
+- **Peekaboo** now works immediately after pressing Enter in a text field instead of staying
+  blocked until the field is deselected.
 
 ## v0.11.2: Peekaboo and Origins Schmorigins
 
