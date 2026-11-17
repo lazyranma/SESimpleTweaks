@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]: Title pending
+## v0.11.2: Peekaboo and Origins Schmorigins
 
 - Added **Origins Schmorigins** — drag resources from any body into the mission planner.
 - Added the **Peekaboo** tweak — a configurable hotkey (ScrollLock by default) hides or shows
