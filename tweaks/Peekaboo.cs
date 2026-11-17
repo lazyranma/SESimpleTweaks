@@ -148,11 +148,16 @@ namespace SimpleTweaks
             if (current != null)
             {
                 GameObject selected = current.currentSelectedGameObject;
-                if (selected != null && selected.activeInHierarchy
-                    && (selected.GetComponent<TMP_InputField>() != null
-                        || selected.GetComponent<UnityEngine.UI.InputField>() != null))
+                if (selected != null && selected.activeInHierarchy)
                 {
-                    return true;
+                    // Selection alone is not enough: TMP can end editing on Enter while the
+                    // EventSystem keeps the field selected. Only an actively edited field may
+                    // swallow the hotkey, otherwise it would stay dead until a click elsewhere.
+                    TMP_InputField tmpField = selected.GetComponent<TMP_InputField>();
+                    if (tmpField != null && tmpField.isFocused) return true;
+
+                    var inputField = selected.GetComponent<UnityEngine.UI.InputField>();
+                    if (inputField != null && inputField.isFocused) return true;
                 }
             }
 
